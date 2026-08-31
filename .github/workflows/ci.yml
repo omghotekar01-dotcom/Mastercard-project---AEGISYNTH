@@ -54,3 +54,30 @@ jobs:
           assert r.final_policy.action in {"STEP_UP", "REVIEW"}
           print("benchmark contract verified")
           PY
+
+  frontend:
+    name: Frontend production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Build production dashboard
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build
