@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+import app.main as main_module
 from app.main import app
 
 client = TestClient(app)
@@ -14,12 +15,23 @@ def test_health_readiness_and_dashboard():
     assert ready.status_code == 200
     ready_data = ready.json()
     assert ready_data['status'] == 'ready'
-    assert ready_data['dashboard'] is True
-    assert ready_data['formal_verifier'] in {'z3', 'domain-fallback'}
+    assert ready_data['checks']['dashboard_present'] is True
+    assert ready_data['checks']['z3_formal_verifier_available'] is True
+    assert ready_data['formal_verifier'] == 'z3'
 
     page = client.get('/')
     assert page.status_code == 200
     assert 'AEGISYNTH' in page.text
+
+
+def test_readiness_fails_closed_without_formal_verifier(monkeypatch):
+    monkeypatch.setattr(main_module, 'HAS_Z3', False)
+    res = client.get('/ready')
+    assert res.status_code == 503
+    data = res.json()
+    assert data['status'] == 'not_ready'
+    assert data['checks']['z3_formal_verifier_available'] is False
+    assert data['formal_verifier'] == 'unavailable'
 
 
 def test_meta_is_explicitly_synthetic_and_governed():
@@ -51,8 +63,18 @@ def test_runtime_self_check_passes_all_contracts():
     data = res.json()
     assert data['status'] == 'pass'
     assert data['checks']
+    assert data['checks']['z3_formal_verifier_available'] is True
     assert all(data['checks'].values())
     assert 'synthetic' in data['scope'].lower()
+
+
+def test_runtime_self_check_reports_missing_formal_verifier(monkeypatch):
+    monkeypatch.setattr(main_module, 'HAS_Z3', False)
+    res = client.get('/api/v1/self-check')
+    assert res.status_code == 200
+    data = res.json()
+    assert data['status'] == 'fail'
+    assert data['checks']['z3_formal_verifier_available'] is False
 
 
 def test_lab_api_schema():
