@@ -5,7 +5,7 @@ from app.engine import AegisynthEngine
 from app.policy import DefenceCompiler, matches
 from app.schemas import Policy
 from app.simulator import PaymentWorld
-from app.verification import verify_policy
+from app.verification import DEFAULT_MAX_POLICY_LATENCY_MS, verify_policy
 
 
 def test_compiler_never_emits_hard_decline():
@@ -60,6 +60,30 @@ def test_verifier_rejects_pass_as_triggered_defence():
     ok, notes = verify_policy(policy)
     assert ok is False
     assert any("PASS" in note for note in notes)
+
+
+def test_verifier_rejects_policy_above_latency_budget():
+    policy = Policy(
+        policy_id="LATENCY-FAIL",
+        merchant_age_max=96,
+        first_time_card_ratio_min=0.64,
+        settlement_change_days_max=14,
+        temporal_burst_score_min=0.64,
+        action="STEP_UP",
+        false_positive_rate=0.005,
+        estimated_latency_ms=DEFAULT_MAX_POLICY_LATENCY_MS + 0.01,
+    )
+    ok, notes = verify_policy(policy)
+    assert ok is False
+    assert any("latency" in note.lower() and "exceeds" in note.lower() for note in notes)
+
+
+def test_compiler_output_satisfies_latency_budget():
+    result = AegisynthEngine(seed=42).run(generations=4)
+    assert result.final_policy.estimated_latency_ms <= DEFAULT_MAX_POLICY_LATENCY_MS
+    ok, notes = verify_policy(result.final_policy)
+    assert ok is True
+    assert any("latency" in note.lower() and "within" in note.lower() for note in notes)
 
 
 def test_counterexamples_are_escaped_attack_variants():
