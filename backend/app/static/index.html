@@ -1,5 +1,158 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AEGISYNTH | Autonomous Payment Defence Compiler</title><style>
-:root{--bg:#07100e;--card:#0d1916;--line:#1e312b;--text:#f1f7f4;--muted:#8ba49a;--accent:#69f0b6;--hot:#ff806f}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -20%,#16372c,#07100e 38%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}.nav{height:70px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 5vw;position:sticky;top:0;background:#07100ee8;backdrop-filter:blur(16px);z-index:5}.brand{font-weight:900;letter-spacing:.12em}.brand span{color:var(--accent)}.safe{font-size:11px;color:var(--muted);letter-spacing:.08em}.safe:before{content:"";display:inline-block;width:7px;height:7px;background:var(--accent);border-radius:50%;margin-right:8px;box-shadow:0 0 12px var(--accent)}.hero{max-width:1050px;margin:auto;text-align:center;padding:80px 24px 50px}.tag{font-size:12px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase}.hero h1{font-size:clamp(48px,7.5vw,92px);line-height:.96;letter-spacing:-.055em;margin:20px 0}.hero h1 b{color:var(--accent)}.hero p{max-width:820px;margin:auto;color:#a9bbb4;font-size:18px;line-height:1.65}.launch{margin:30px auto 0;background:var(--accent);border:0;color:#03100b;font-weight:900;padding:15px 22px;border-radius:11px;cursor:pointer;box-shadow:0 14px 40px #69f0b625}.launch:disabled{opacity:.55}.note{display:block;color:var(--muted);font-size:11px;margin-top:11px}.wrap{max-width:1180px;margin:auto;padding:0 18px}.pipeline{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:15px;overflow:hidden}.step{background:#0a1512;padding:19px;border-right:1px solid var(--line)}.step:last-child{border:0}.step small{color:var(--muted)}.step b{display:block;font-size:12px;letter-spacing:.1em;margin:6px 0}.step span{font-size:11px;color:var(--muted)}.empty,.panel,.metric,.verify{background:var(--card);border:1px solid var(--line);border-radius:15px}.empty{margin-top:20px;min-height:230px;display:grid;place-items:center;text-align:center;color:var(--muted);padding:25px}.empty b{display:block;color:var(--text);font-size:22px;margin-bottom:6px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}.metric{padding:18px}.metric span{font-size:11px;color:var(--muted)}.metric b{display:block;font-size:30px;margin-top:6px}.metric.hot b{color:var(--accent)}.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;margin-top:12px}.panel{padding:20px}.head{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:12px;font-size:11px;color:var(--muted);letter-spacing:.08em}.head b{color:var(--text);text-transform:uppercase}.bars{padding-top:10px}.row{display:grid;grid-template-columns:50px 1fr 55px 80px;gap:9px;align-items:center;padding:9px 0;font-size:10px;color:var(--muted)}.track{height:9px;background:#15251f;border-radius:9px;overflow:hidden}.track i{height:100%;display:block;background:linear-gradient(90deg,var(--hot),#ffc071);border-radius:9px}.row strong{color:var(--text);font-size:12px}.verified{display:inline-block;color:var(--accent);font-size:11px;font-weight:900;margin:17px 0 10px}.policy pre{background:#06100d;border:1px solid #173029;border-radius:12px;padding:14px;white-space:pre-wrap;color:#d3e8df;line-height:1.7}.policy p{color:var(--muted);font-size:12px;line-height:1.55}.verify{padding:20px;margin-top:12px}.verify h3{margin-top:0}.check{font-size:12px;color:#b5c7c0;padding:5px 0}.check:before{content:"✓";color:var(--accent);font-weight:900;margin-right:9px}.footer{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding:28px 0 40px;margin-top:60px;color:var(--muted);font-size:11px}.footer b{color:var(--text)}.hidden{display:none}.err{margin-top:15px;padding:12px;border:1px solid #5e2a25;background:#321715;color:#ffc2ba;border-radius:10px}@media(max-width:780px){.pipeline,.metrics{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.hero p{font-size:15px}.row{grid-template-columns:45px 1fr 50px}.row small{display:none}}@media(max-width:480px){.pipeline,.metrics{grid-template-columns:1fr}.safe{display:none}}
-</style></head><body><div class="nav"><div class="brand">AEGI<span>SYNTH</span></div><div class="safe">SYNTHETIC LAB • SAFE MODE</div></div><section class="hero"><div class="tag">Mastercard AI Defence Lab • GFF 2026</div><h1>Turn tomorrow's fraud into<br><b>verified defence.</b></h1><p>Compile a novel payment attack into a compact defence policy, red-team it for bypasses, feed counterexamples back into synthesis, and verify safety constraints before human approval.</p><button id="launch" class="launch">RELEASE ZERO-DAY SIMULATION</button><span class="note">No real cards • No real merchants • No paid API required</span></section><div class="wrap"><div class="pipeline"><div class="step"><small>01</small><b>SIMULATE</b><span>Safe synthetic attack family</span></div><div class="step"><small>02</small><b>SYNTHESIZE</b><span>Compile smallest effective control</span></div><div class="step"><small>03</small><b>COUNTEREXAMPLE</b><span>Mutate and discover bypasses</span></div><div class="step"><small>04</small><b>VERIFY</b><span>Safety + business constraints</span></div></div><div id="error" class="err hidden"></div><div id="empty" class="empty"><div><b>Live adversarial lab is ready.</b>Launch a fictional zero-day and watch AEGISYNTH turn escaped attacks into a verified defence package.</div></div><div id="results" class="hidden"><div class="metrics"><div class="metric"><span>Baseline attack success</span><b id="m0">-</b></div><div class="metric hot"><span>After compilation</span><b id="m1">-</b></div><div class="metric"><span>Benign acceptance</span><b id="m2">-</b></div><div class="metric"><span>Policy latency estimate</span><b id="m3">-</b></div></div><div class="grid"><div class="panel"><div class="head"><span>ADVERSARIAL EVOLUTION</span><b id="family"></b></div><div id="bars" class="bars"></div></div><div class="panel policy"><div class="head"><span>COMPILED DEFENCE PACKAGE</span><b id="pid"></b></div><div class="verified">✓ FORMALLY VERIFIED</div><pre id="dsl"></pre><p id="explain"></p></div></div><div class="verify"><h3>Verification ledger</h3><div id="notes"></div></div></div><div class="footer"><b>AEGISYNTH</b><span>Attack → Counterexample → Synthesis → Verification → Defence</span></div></div><script>
-const $=id=>document.getElementById(id), pct=n=>(n*100).toFixed(1)+'%'; $('launch').onclick=async()=>{const btn=$('launch');btn.disabled=true;btn.textContent='RUNNING ADVERSARIAL LAB…';$('error').classList.add('hidden');try{const seed=Math.floor(Math.random()*100000);const r=await fetch('/api/v1/lab/run?seed='+seed+'&generations=4');if(!r.ok)throw new Error('API '+r.status);const d=await r.json();$('empty').classList.add('hidden');$('results').classList.remove('hidden');$('m0').textContent=pct(d.baseline_attack_success_rate);$('m1').textContent=pct(d.final_attack_success_rate);$('m2').textContent=pct(d.metrics.benign_acceptance_rate);$('m3').textContent=d.metrics.estimated_policy_latency_ms.toFixed(2)+' ms';$('family').textContent=d.attack_family.replaceAll('_',' ');$('pid').textContent=d.final_policy.policy_id;$('dsl').textContent=`IF merchant_age ≤ ${d.final_policy.merchant_age_max}h\nAND first_time_card_ratio ≥ ${d.final_policy.first_time_card_ratio_min}\nAND settlement_change ≤ ${d.final_policy.settlement_change_days_max}d\nAND temporal_burst ≥ ${d.final_policy.temporal_burst_score_min}\nTHEN ${d.final_policy.action}`;$('explain').textContent=d.final_policy.explanation;$('bars').innerHTML=d.iterations.map(x=>`<div class="row"><span>GEN ${x.iteration}</span><div class="track"><i style="width:${x.attack_success_rate*100}%"></i></div><strong>${pct(x.attack_success_rate)}</strong><small>${x.counterexamples} bypasses</small></div>`).join('');$('notes').innerHTML=d.verification_notes.map(x=>`<div class="check">${x}</div>`).join('');}catch(e){$('error').textContent='Could not run lab: '+e.message;$('error').classList.remove('hidden');}finally{btn.disabled=false;btn.textContent='RELEASE ANOTHER ZERO-DAY';}};
-</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f6f7f8">
+  <title>AEGISYNTH | Autonomous Payment Defence Compiler</title>
+  <style>
+    :root{
+      --bg:#f6f7f8;--surface:#ffffff;--soft:#eef6f4;--soft-red:#fff1ef;--ink:#142238;
+      --muted:#647184;--line:#dfe5e9;--teal:#087f72;--green:#198f65;--red:#e85b52;--amber:#df9634;
+      --shadow:0 14px 38px rgba(20,34,56,.08);--radius:20px
+    }
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+    button{font:inherit}.nav{height:72px;padding:0 max(24px,5vw);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:rgba(246,247,248,.93);backdrop-filter:blur(18px);position:sticky;top:0;z-index:10}.brand{display:flex;align-items:center;gap:12px;font-weight:900;letter-spacing:.06em}.mark{width:35px;height:35px;border:2px solid var(--teal);border-radius:11px;display:grid;place-items:center;color:var(--teal);font-weight:900}.brand span{color:var(--teal)}.status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 5px #198f6517}
+    .shell{max-width:1240px;margin:auto;padding:0 24px}.hero{padding:72px 0 34px;display:grid;grid-template-columns:1.15fr .85fr;gap:34px;align-items:center}.eyebrow{display:inline-flex;gap:8px;align-items:center;color:var(--teal);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase}.hero h1{font-size:clamp(52px,6.6vw,88px);line-height:.96;letter-spacing:-.055em;margin:18px 0 20px}.hero h1 em{font-style:normal;color:var(--teal)}.hero p{font-size:19px;line-height:1.65;color:var(--muted);max-width:760px;margin:0}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}.btn{border:0;border-radius:13px;padding:15px 20px;font-weight:850;cursor:pointer;transition:.2s}.btn:hover{transform:translateY(-1px)}.btn.primary{background:var(--teal);color:white;box-shadow:0 12px 28px rgba(8,127,114,.22)}.btn.secondary{background:white;color:var(--ink);border:1px solid var(--line)}.btn:disabled{opacity:.55;cursor:wait;transform:none}.tiny{margin-top:12px;color:var(--muted);font-size:12px}
+    .concept{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}.concept .label{font-size:12px;font-weight:850;color:var(--muted);letter-spacing:.09em}.plane{margin-top:17px;display:grid;gap:10px}.plane-row{display:grid;grid-template-columns:1fr 40px 1fr;align-items:center;gap:8px}.plane-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fbfcfc}.plane-card b{display:block;font-size:14px}.plane-card small{display:block;color:var(--muted);margin-top:4px;line-height:1.4}.arrow{text-align:center;color:var(--teal);font-weight:900}.concept .claim{margin-top:16px;background:var(--soft);border-radius:14px;padding:14px;color:#31554d;font-size:13px;line-height:1.5}
+    .section-title{display:flex;justify-content:space-between;align-items:end;gap:20px;margin:34px 0 14px}.section-title h2{margin:0;font-size:28px;letter-spacing:-.025em}.section-title p{margin:0;color:var(--muted);font-size:13px}.pipeline{display:grid;grid-template-columns:repeat(7,1fr);gap:9px}.stage{background:white;border:1px solid var(--line);border-radius:16px;padding:16px;min-height:128px}.stage .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--teal);font-weight:900;font-size:12px}.stage:nth-child(2n) .n{background:var(--soft-red);color:var(--red)}.stage b{display:block;margin:12px 0 6px;font-size:12px;letter-spacing:.04em}.stage span{font-size:11px;color:var(--muted);line-height:1.45}.empty{margin-top:18px;background:white;border:1px dashed #bac6cc;border-radius:var(--radius);padding:42px;text-align:center;color:var(--muted)}.empty b{display:block;color:var(--ink);font-size:22px;margin-bottom:7px}.hidden{display:none!important}.error{margin-top:18px;background:#fff0ed;border:1px solid #ffc6bf;color:#9d332d;padding:14px 16px;border-radius:14px}
+    .runbar{margin-top:18px;background:white;border:1px solid var(--line);border-radius:16px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}.runbar-left{display:flex;align-items:center;gap:12px}.runbadge{background:var(--soft);color:var(--teal);font-size:11px;font-weight:900;padding:7px 10px;border-radius:999px}.runbar small{color:var(--muted)}
+    .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}.metric{background:white;border:1px solid var(--line);border-radius:17px;padding:20px}.metric span{color:var(--muted);font-size:12px}.metric b{display:block;font-size:34px;letter-spacing:-.04em;margin-top:7px}.metric.good b{color:var(--green)}.metric.hot b{color:var(--red)}
+    .grid{display:grid;grid-template-columns:1.08fr .92fr;gap:12px;margin-top:12px}.panel{background:white;border:1px solid var(--line);border-radius:var(--radius);padding:22px}.panel-head{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:13px;margin-bottom:14px}.panel-head b{font-size:13px;letter-spacing:.05em}.panel-head span{font-size:11px;color:var(--muted)}.bars{display:grid;gap:13px}.barrow{display:grid;grid-template-columns:64px 1fr 58px 92px;gap:10px;align-items:center;font-size:11px;color:var(--muted)}.bartrack{height:12px;background:#edf1f2;border-radius:999px;overflow:hidden}.barfill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--red),var(--amber))}.barrow strong{font-size:12px;color:var(--ink)}
+    .policy-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.verified{display:inline-flex;align-items:center;gap:7px;background:#eaf7f2;color:var(--green);font-size:11px;font-weight:900;padding:7px 10px;border-radius:999px}.policy pre{white-space:pre-wrap;margin:14px 0;background:#f8faf9;border:1px solid var(--line);border-radius:15px;padding:16px;color:#244239;line-height:1.75;font-size:12px}.policy p{font-size:13px;line-height:1.55;color:var(--muted)}.policy-actions{display:flex;gap:8px;margin-top:13px}.mini{border:1px solid var(--line);background:white;border-radius:10px;padding:9px 11px;font-size:11px;font-weight:800;cursor:pointer}
+    .verification{margin-top:12px;background:white;border:1px solid var(--line);border-radius:var(--radius);padding:22px}.verification h3{margin:0 0 8px}.ledger{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:13px}.check{background:#f8faf9;border:1px solid var(--line);border-radius:12px;padding:12px 13px;font-size:12px;color:#455568;line-height:1.4}.check:before{content:'✓';color:var(--green);font-weight:1000;margin-right:8px}.disclaimer{margin-top:12px;background:#fff8ea;border:1px solid #f1d39c;border-radius:14px;padding:13px 15px;font-size:12px;color:#775a24}.footer{border-top:1px solid var(--line);margin-top:56px;padding:28px 0 40px;display:flex;justify-content:space-between;gap:20px;color:var(--muted);font-size:12px}.footer b{color:var(--ink)}
+    @media(max-width:980px){.hero{grid-template-columns:1fr}.pipeline{grid-template-columns:repeat(4,1fr)}.metrics{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.ledger{grid-template-columns:1fr}}
+    @media(max-width:640px){.nav{padding:0 18px}.shell{padding:0 16px}.hero{padding-top:48px}.hero p{font-size:16px}.pipeline{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr}.barrow{grid-template-columns:52px 1fr 52px}.barrow small{display:none}.footer{flex-direction:column}.status span:last-child{display:none}}
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand"><div class="mark">A</div>AEGI<span>SYNTH</span></div>
+    <div class="status"><i class="dot"></i><span>LIVE • SYNTHETIC DEFENSIVE LAB</span></div>
+  </nav>
+
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Mastercard Innovation Challenge @ GFF 2026 • Team XYRO</div>
+        <h1>From new fraud to <em>verified defence.</em></h1>
+        <p>AEGISYNTH is an Autonomous Payment Defence Compiler: it safely simulates a novel payment attack, synthesizes a compact control, attacks that control for bypasses, repairs the weaknesses, and verifies the final policy before human review.</p>
+        <div class="actions">
+          <button id="benchmark" class="btn primary">RUN VERIFIED BENCHMARK</button>
+          <button id="explore" class="btn secondary">EXPLORE NEW SCENARIO</button>
+        </div>
+        <div class="tiny">No real cards • No real merchants • No customer PII • No paid API • No automatic hard decline</div>
+      </div>
+      <aside class="concept">
+        <div class="label">WHY THE ARCHITECTURE SCALES</div>
+        <div class="plane">
+          <div class="plane-row"><div class="plane-card"><b>CONTROL PLANE</b><small>simulate • mutate • synthesize • verify</small></div><div class="arrow">→</div><div class="plane-card"><b>DEFENCE PACKAGE</b><small>small, explainable, versionable policy</small></div></div>
+          <div class="plane-row"><div class="plane-card"><b>EXPENSIVE INTELLIGENCE</b><small>runs only when a new threat needs a defence</small></div><div class="arrow">↓</div><div class="plane-card"><b>DATA PLANE</b><small>cheap deterministic checks at transaction time</small></div></div>
+        </div>
+        <div class="claim"><b>No per-transaction LLM call.</b> Generative/adversarial work is amortized during defence creation, while the online policy remains lightweight.</div>
+      </aside>
+    </section>
+
+    <div class="section-title"><h2>Closed-loop defence compilation</h2><p>Attack → counterexample → repair → verification → review</p></div>
+    <section class="pipeline">
+      <div class="stage"><div class="n">1</div><b>IDENTIFY</b><span>Start from a novel synthetic attack family.</span></div>
+      <div class="stage"><div class="n">2</div><b>GENERATE</b><span>Create safe adversarial variations.</span></div>
+      <div class="stage"><div class="n">3</div><b>DISCOVER</b><span>Find the shared attack invariant.</span></div>
+      <div class="stage"><div class="n">4</div><b>SYNTHESIZE</b><span>Search compact candidate controls.</span></div>
+      <div class="stage"><div class="n">5</div><b>ATTACK AGAIN</b><span>Mutate toward bypasses and hard negatives.</span></div>
+      <div class="stage"><div class="n">6</div><b>VERIFY</b><span>Check domains, FPR budget and governance.</span></div>
+      <div class="stage"><div class="n">7</div><b>PACKAGE</b><span>Prepare a human-reviewable defence.</span></div>
+    </section>
+
+    <div id="error" class="error hidden"></div>
+    <div id="empty" class="empty"><b>Adversarial lab ready.</b>Run the committed benchmark to reproduce the public submission numbers, or explore a fresh deterministic scenario.</div>
+
+    <section id="results" class="hidden">
+      <div class="runbar">
+        <div class="runbar-left"><span id="runbadge" class="runbadge">BENCHMARK</span><div><b id="family">ghost merchant swarm</b><br><small id="runmeta">seed 42 • 4 generations</small></div></div>
+        <small id="scope">Synthetic prototype • not Mastercard production traffic</small>
+      </div>
+
+      <div class="metrics">
+        <div class="metric hot"><span>Attack success before defence</span><b id="m0">—</b></div>
+        <div class="metric good"><span>Attack success after compilation</span><b id="m1">—</b></div>
+        <div class="metric"><span>Attack-family coverage</span><b id="m2">—</b></div>
+        <div class="metric"><span>Benign acceptance</span><b id="m3">—</b></div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <div class="panel-head"><b>ADVERSARIAL EVOLUTION</b><span>harder red-team generations</span></div>
+          <div id="bars" class="bars"></div>
+        </div>
+        <div class="panel policy">
+          <div class="panel-head"><b>COMPILED DEFENCE PACKAGE</b><span id="pid">—</span></div>
+          <div class="policy-top"><span id="verified" class="verified">✓ FORMALLY VERIFIED</span><span id="latency" class="tiny"></span></div>
+          <pre id="dsl"></pre>
+          <p id="explain"></p>
+          <div class="policy-actions"><button id="copy" class="mini">COPY POLICY</button><button id="download" class="mini">EXPORT JSON</button></div>
+        </div>
+      </div>
+
+      <div class="verification">
+        <div class="panel-head"><b>VERIFICATION LEDGER</b><span>AI proposes • constraints decide • humans deploy</span></div>
+        <div id="notes" class="ledger"></div>
+      </div>
+      <div class="disclaimer"><b>Benchmark integrity:</b> seed 42 is the reproducible synthetic prototype referenced in the Kaggle writeup and repository. These metrics are not Mastercard production claims.</div>
+    </section>
+
+    <footer class="footer"><b>AEGISYNTH • TEAM XYRO</b><span>Om Ghotekar • Prajwal Bhosale</span><span>Autonomous Payment Defence Compiler</span></footer>
+  </main>
+
+  <script>
+    const $=id=>document.getElementById(id);
+    const pct=n=>(n*100).toFixed(2)+'%';
+    let latest=null;
+
+    async function execute(mode){
+      const a=$('benchmark'), b=$('explore'); a.disabled=b.disabled=true;
+      $('error').classList.add('hidden');
+      try{
+        const isBenchmark=mode==='benchmark';
+        const seed=isBenchmark?42:Math.floor(Math.random()*1000000);
+        const url=isBenchmark?'/api/v1/demo':'/api/v1/lab/run?seed='+seed+'&generations=4';
+        a.textContent=isBenchmark?'RUNNING VERIFIED BENCHMARK…':'RUN VERIFIED BENCHMARK';
+        b.textContent=!isBenchmark?'RUNNING NEW SCENARIO…':'EXPLORE NEW SCENARIO';
+        const response=await fetch(url,{headers:{'Accept':'application/json'}});
+        if(!response.ok) throw new Error('API returned '+response.status);
+        const d=await response.json(); latest=d; render(d,isBenchmark);
+      }catch(err){
+        $('error').textContent='The lab could not complete this run: '+err.message+'. Retry once the service is ready.';
+        $('error').classList.remove('hidden');
+      }finally{
+        a.disabled=b.disabled=false; a.textContent='RUN VERIFIED BENCHMARK'; b.textContent='EXPLORE NEW SCENARIO';
+      }
+    }
+
+    function render(d,isBenchmark){
+      $('empty').classList.add('hidden'); $('results').classList.remove('hidden');
+      $('runbadge').textContent=isBenchmark?'VERIFIED BENCHMARK':'NEW SYNTHETIC RUN';
+      $('family').textContent=d.attack_family.replaceAll('_',' ');
+      $('runmeta').textContent='seed '+d.seed+' • '+d.iterations.length+' generations';
+      $('m0').textContent=pct(d.baseline_attack_success_rate);
+      $('m1').textContent=pct(d.final_attack_success_rate);
+      $('m2').textContent=pct(d.metrics.final_fraud_coverage);
+      $('m3').textContent=pct(d.metrics.benign_acceptance_rate);
+      $('pid').textContent=d.final_policy.policy_id;
+      $('latency').textContent='estimated policy eval '+d.metrics.estimated_policy_latency_ms.toFixed(2)+' ms';
+      $('verified').textContent=d.final_policy.verified?'✓ FORMALLY VERIFIED':'! REVIEW REQUIRED';
+      const p=d.final_policy;
+      $('dsl').textContent=`IF merchant_age ≤ ${p.merchant_age_max}h\nAND first_time_card_ratio ≥ ${p.first_time_card_ratio_min}\nAND settlement_change ≤ ${p.settlement_change_days_max}d\nAND temporal_burst ≥ ${p.temporal_burst_score_min}\nTHEN ${p.action}`;
+      $('explain').textContent=p.explanation;
+      $('bars').innerHTML=d.iterations.map(x=>`<div class="barrow"><span>GEN ${x.iteration}</span><div class="bartrack"><div class="barfill" style="width:${Math.max(1,x.attack_success_rate*100)}%"></div></div><strong>${pct(x.attack_success_rate)}</strong><small>${x.counterexamples} bypasses</small></div>`).join('');
+      $('notes').innerHTML=d.verification_notes.map(n=>`<div class="check">${n}</div>`).join('');
+      $('results').scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    $('benchmark').onclick=()=>execute('benchmark');
+    $('explore').onclick=()=>execute('explore');
+    $('copy').onclick=async()=>{if(!latest)return;await navigator.clipboard.writeText($('dsl').textContent);$('copy').textContent='COPIED';setTimeout(()=>$('copy').textContent='COPY POLICY',1200)};
+    $('download').onclick=()=>{if(!latest)return;const blob=new Blob([JSON.stringify(latest,null,2)],{type:'application/json'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='aegisynth-'+latest.final_policy.policy_id+'.json';a.click();URL.revokeObjectURL(u)};
+  </script>
+</body>
+</html>
