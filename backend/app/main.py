@@ -6,11 +6,12 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from .artifact import build_review_package
 from .engine import AegisynthEngine
-from .schemas import LabResult
+from .schemas import LabResult, ReviewPackage
 from .verification import HAS_Z3
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 BENCHMARK_SEED = 42
 BENCHMARK_GENERATIONS = 4
 ATTACK_FAMILY = "ghost_merchant_swarm"
@@ -24,10 +25,7 @@ BENCHMARK_CONTRACT = {
 app = FastAPI(
     title="AEGISYNTH API",
     version=APP_VERSION,
-    description=(
-        "Autonomous Payment Defence Compiler - safe synthetic red-team/blue-team lab. "
-        "The public demo is defensive-only and uses no real payment credentials or customer data."
-    ),
+    description="Autonomous Payment Defence Compiler - safe synthetic red-team/blue-team lab.",
 )
 app.add_middleware(
     CORSMiddleware,
@@ -49,11 +47,7 @@ def _benchmark() -> LabResult:
 
 @app.get("/health")
 def health():
-    return {
-        "status": "ok",
-        "service": "aegisynth",
-        "version": APP_VERSION,
-    }
+    return {"status": "ok", "service": "aegisynth", "version": APP_VERSION}
 
 
 @app.get("/ready")
@@ -78,33 +72,36 @@ def meta():
         "benchmark_generations": BENCHMARK_GENERATIONS,
         "responsible_actions": ["STEP_UP", "REVIEW"],
         "production_claim": False,
-        "scope": "synthetic prototype; not Mastercard production traffic",
+        "scope": "synthetic prototype; not production traffic",
     }
 
 
 @app.get("/api/v1/demo", response_model=LabResult)
 def run_reproducible_demo():
-    """Run the exact deterministic scenario referenced in the public benchmark."""
     return _benchmark()
+
+
+@app.get("/api/v1/review-package", response_model=ReviewPackage)
+def review_package():
+    return build_review_package(_benchmark())
 
 
 @app.get("/api/v1/self-check")
 def self_check():
-    """Runtime smoke test for public benchmark and governance invariants."""
     result = _benchmark()
+    package = build_review_package(result)
     checks = {
         "benchmark_seed": result.seed == BENCHMARK_SEED,
-        "baseline_attack_success": result.baseline_attack_success_rate
-        == BENCHMARK_CONTRACT["baseline_attack_success_rate"],
-        "final_attack_success": result.final_attack_success_rate
-        == BENCHMARK_CONTRACT["final_attack_success_rate"],
-        "fraud_coverage": result.metrics.final_fraud_coverage
-        == BENCHMARK_CONTRACT["final_fraud_coverage"],
-        "benign_acceptance": result.metrics.benign_acceptance_rate
-        == BENCHMARK_CONTRACT["benign_acceptance_rate"],
+        "baseline_attack_success": result.baseline_attack_success_rate == BENCHMARK_CONTRACT["baseline_attack_success_rate"],
+        "final_attack_success": result.final_attack_success_rate == BENCHMARK_CONTRACT["final_attack_success_rate"],
+        "fraud_coverage": result.metrics.final_fraud_coverage == BENCHMARK_CONTRACT["final_fraud_coverage"],
+        "benign_acceptance": result.metrics.benign_acceptance_rate == BENCHMARK_CONTRACT["benign_acceptance_rate"],
         "policy_verified": result.final_policy.verified is True,
         "responsible_action": result.final_policy.action in {"STEP_UP", "REVIEW"},
         "false_positive_budget": result.final_policy.false_positive_rate <= 0.02,
+        "human_approval_required": package.approval_status == "HUMAN_APPROVAL_REQUIRED",
+        "not_auto_deployed": package.deployment_status == "NOT_DEPLOYED",
+        "artifact_fingerprint": len(package.artifact_sha256) == 64,
         "dashboard_present": (STATIC_DIR / "index.html").exists(),
     }
     return {
@@ -120,7 +117,6 @@ def run_lab(
     seed: int = Query(42, ge=0, le=10_000_000),
     generations: int = Query(4, ge=1, le=8),
 ):
-    """Run a new deterministic synthetic scenario for the supplied seed."""
     return AegisynthEngine(seed=seed).run(
         generations=generations,
         attack_family=ATTACK_FAMILY,
