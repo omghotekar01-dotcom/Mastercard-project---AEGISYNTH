@@ -1,29 +1,78 @@
 # AEGISYNTH
-## Autonomous Payment Defence Compiler
+### Autonomous Payment Defence Compiler
 
-> **Don't build another fraud detector. Build the machine that builds fraud defences.**
+> **We do not build another fraud score. We compile the defence that should exist because a new attack now exists.**
 
-AEGISYNTH is a safe red-team / blue-team payment-security laboratory built for the **Mastercard AI Defence Lab for Payment Security @ GFF 2026**. It turns a newly observed synthetic attack family into a compact, explainable, formally checked defence package.
+[![Live Demo](https://img.shields.io/badge/LIVE-DEMO-087f72?style=for-the-badge)](https://aegisynth.onrender.com)
+[![Kaggle Writeup](https://img.shields.io/badge/KAGGLE-SUBMISSION-20BEFF?style=for-the-badge&logo=kaggle&logoColor=white)](https://www.kaggle.com/competitions/mastercard-innovation-challenge-2026/writeups/aegisynth-autonomous-payment-defence-compiler)
+[![Python 3.12](https://img.shields.io/badge/PYTHON-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FASTAPI-0.116-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Z3](https://img.shields.io/badge/FORMAL%20VERIFICATION-Z3-6F42C1?style=flat-square)](https://github.com/Z3Prover/z3)
+[![MIT License](https://img.shields.io/badge/LICENSE-MIT-222?style=flat-square)](LICENSE)
 
-### Why it is different
-Conventional fraud systems output a score. AEGISYNTH targets the slower operational gap after discovery: analysts still need to understand a new attack, write controls, test false positives, find bypasses, revise thresholds and safely deploy. AEGISYNTH automates that defensive compilation loop:
+**Team XYRO — Om Ghotekar · Prajwal Bhosale**  
+Mastercard Innovation Challenge @ GFF 2026 · AI Defense Lab for Payment Security
 
-**Attack → Counterexample → Synthesis → Verification → Defence**
+---
 
-### What works today
-- Safe synthetic payment-world generator (no real cards, PII, merchants or credentials).
-- Adaptive fictional `ghost_merchant_swarm` attack family.
-- Compact policy compiler with a strict false-positive budget.
-- Counterexample-guided iterative synthesis (CEGIS-style feedback).
-- Z3 formal satisfiability + governance checks.
-- Responsible actions: `STEP_UP` / `REVIEW`, never automatic hard decline.
-- Single-service FastAPI dashboard for the fastest free-tier deployment.
-- Optional richer Next.js dashboard.
-- FastAPI API with OpenAPI docs.
-- Automated backend/API tests plus a ready-to-enable CI workflow template.
-- Docker + free-tier Render blueprint.
+## The problem
 
-### Fastest local run
+GenAI can mutate fraud strategies in minutes. Turning a newly discovered attack into a safe production control can still require investigation, rule design, false-positive testing, bypass analysis, verification and approval.
+
+AEGISYNTH targets that **Time-to-Defence gap**.
+
+```text
+Novel Attack
+    ↓
+Synthetic Variants
+    ↓
+Attack Invariant
+    ↓
+Candidate Defence
+    ↓
+Red-Team Counterexamples
+    ↓
+Policy Repair
+    ↓
+Formal + Business Verification
+    ↓
+Human-Reviewable Defence Package
+```
+
+The expensive intelligence runs in an offline **control plane**. The resulting policy is a small deterministic object suitable for integration into a real-time **data plane** — with **no per-transaction LLM call**.
+
+---
+
+## What works today
+
+| Capability | Status |
+|---|---|
+| Safe synthetic payment-world generator | ✅ Working |
+| Fictional `ghost_merchant_swarm` attack family | ✅ Working |
+| Adaptive red-team generations | ✅ Working |
+| Compact defence-policy synthesis | ✅ Working |
+| Counterexample-guided repair loop | ✅ Working |
+| Strict false-positive budget | ✅ Working |
+| Z3-backed policy verification | ✅ Working |
+| STEP_UP / REVIEW governance only | ✅ Working |
+| Reproducible seed-42 benchmark | ✅ Working |
+| Public FastAPI + dashboard deployment | ✅ Live |
+| Runtime self-check endpoint | ✅ Working |
+| Docker / Render deployment | ✅ Working |
+
+**Live prototype:** https://aegisynth.onrender.com
+
+---
+
+## Reproduce the submitted benchmark
+
+The Kaggle submission benchmark is deterministic and versioned in [`submission/benchmark_seed42.json`](submission/benchmark_seed42.json).
+
+```bash
+curl https://aegisynth.onrender.com/api/v1/demo
+```
+
+Or locally:
 
 ```bash
 cd backend
@@ -34,19 +83,141 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Open `http://localhost:8000` for the working dashboard and `http://localhost:8000/docs` for OpenAPI.
+Then open:
 
-### Optional split Next.js frontend
+- Dashboard: `http://localhost:8000`
+- OpenAPI: `http://localhost:8000/docs`
+- Reproducible benchmark: `http://localhost:8000/api/v1/demo`
+- Runtime self-check: `http://localhost:8000/api/v1/self-check`
+- Readiness: `http://localhost:8000/ready`
 
-```bash
-cd frontend
-npm install
-# PowerShell: $env:NEXT_PUBLIC_API_URL="http://localhost:8000"
-# bash: export NEXT_PUBLIC_API_URL=http://localhost:8000
-npm run dev
+### Synthetic prototype benchmark — seed 42
+
+| Metric | Result |
+|---|---:|
+| Attack success before defence | **53.83%** |
+| Attack success after compilation | **7.43%** |
+| Attack-family coverage | **92.57%** |
+| Benign acceptance | **99.43%** |
+
+> These are **synthetic prototype results**, not Mastercard production claims.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[Novel synthetic attack] --> B[Synthetic Payment World]
+    B --> C[Red-Team Generator]
+    C --> D[Invariant Discovery]
+    D --> E[Defence Compiler]
+    E --> F[Counterexample Engine]
+    F -->|bypass found| E
+    F -->|candidate survives| G[Z3 + Business Verification]
+    G --> H[Human Review Package]
+    H --> I[Compiled lightweight policy]
 ```
 
-Open `http://localhost:3000`.
+### Control plane vs data plane
+
+```mermaid
+flowchart TB
+    subgraph CP[Offline / Control Plane]
+      S[Simulate] --> M[Mutate]
+      M --> Y[Synthesize]
+      Y --> V[Verify]
+    end
+    V --> P[Versioned defence policy]
+    subgraph DP[Online / Data Plane]
+      X[Payment signals] --> R[Existing risk engine]
+      R --> P2[Compiled AEGISYNTH policy]
+      P2 --> O[Pass / Step-up / Review]
+    end
+    P -. deploy after human approval .-> P2
+```
+
+---
+
+## Example: Ghost Merchant Swarm
+
+A fictional adversarial family creates many merchants that look different on the surface but share a hidden structure:
+
+- unusually young merchant accounts
+- high first-time-card concentration
+- recent settlement-account changes
+- synchronized burst-like activity
+
+AEGISYNTH does not memorize merchant names. It searches for a compact structural policy, then deliberately mutates the attack toward benign ranges to find bypasses.
+
+Every bypass becomes a **counterexample** used in the next synthesis round.
+
+---
+
+## Defence package
+
+A compiled policy is intentionally small, explainable and reviewable:
+
+```text
+IF merchant_age <= threshold
+AND first_time_card_ratio >= threshold
+AND settlement_change <= threshold
+AND temporal_burst >= threshold
+THEN STEP_UP
+```
+
+The compiler optimizes fraud-family coverage subject to a strict false-positive budget. The verifier checks valid feature domains, allowed actions, policy satisfiability and governance constraints.
+
+**No autonomous hard decline is emitted.**
+
+---
+
+## Public API
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /health` | Liveness |
+| `GET /ready` | Readiness + verifier mode |
+| `GET /api/v1/meta` | Scope, benchmark and governance metadata |
+| `GET /api/v1/demo` | Exact submitted seed-42 benchmark |
+| `GET /api/v1/self-check` | Runtime benchmark + governance smoke test |
+| `GET /api/v1/lab/run?seed=...&generations=...` | New deterministic synthetic scenario |
+| `GET /docs` | Interactive OpenAPI documentation |
+
+---
+
+## Testing and claim integrity
+
+The public claims are mapped to implementation evidence in:
+
+**[`docs/CLAIM_TO_TEST_MATRIX.md`](docs/CLAIM_TO_TEST_MATRIX.md)**
+
+Tests cover:
+
+- API and dashboard availability
+- deterministic benchmark regression
+- policy verification
+- false-positive budget
+- responsible actions
+- rejection of invalid policy domains
+- absence of sensitive demographic policy features
+- counterexample semantics
+- synthetic-only data contract
+
+Run locally:
+
+```bash
+cd backend
+pytest -q
+```
+
+---
+
+## Deployment
+
+### Render Blueprint
+
+The root [`render.yaml`](render.yaml) deploys the single-service dashboard/API using the Docker backend.
 
 ### Docker
 
@@ -55,36 +226,48 @@ docker build -t aegisynth ./backend
 docker run --rm -p 8000:8000 aegisynth
 ```
 
-Or run the split stack with:
+The production image runs as a non-root user and includes a container healthcheck.
 
-```bash
-docker compose up --build
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+---
+
+## Product principles
+
+1. **Defensive-only.** No real payment credentials, merchants or customer PII.
+2. **Human governed.** AI can synthesize a recommendation; humans approve deployment.
+3. **Cheap online path.** Generative intelligence is not invoked for every payment.
+4. **Reproducible claims.** Public benchmark values are tied to deterministic code and seed.
+5. **Adapter based.** A future pilot can map approved enterprise features without rewriting the compiler core.
+6. **Fail safe.** The triggered response is step-up/review, not autonomous hard decline.
+
+---
+
+## Repository map
+
+```text
+backend/app/
+├── engine.py          # orchestration / adversarial loop
+├── simulator.py       # safe synthetic payment world
+├── policy.py          # compact policy compiler
+├── verification.py    # Z3 + governance checks
+├── schemas.py         # typed API/data contracts
+├── main.py            # FastAPI + diagnostics
+└── static/index.html  # judge-facing single-service dashboard
+
+backend/tests/         # API, engine, benchmark and safety tests
+docs/                  # architecture, deployment, research, claim matrix
+submission/            # reproducible benchmark contract
+frontend/              # optional richer split-service UI
 ```
 
-### One-click lab API
+---
 
-```bash
-curl "http://localhost:8000/api/v1/lab/run?seed=42&generations=4"
-```
+## Responsible AI & security
 
-### Reproducible prototype benchmark
-Seed `42` in the committed synthetic simulator currently produces:
+AEGISYNTH is a sandboxed defensive research prototype. It does not provide real-world payment attack instructions, credentials or production Mastercard data. See [`SECURITY.md`](SECURITY.md).
 
-- baseline attack success: **53.83%**
-- final attack success after compilation: **7.43%**
-- final fraud-family coverage: **92.57%**
-- benign acceptance: **99.43%**
+---
 
-These numbers are synthetic prototype results, **not Mastercard production claims**. See [`submission/benchmark_seed42.json`](submission/benchmark_seed42.json).
-
-### Architecture and deployment
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
-- [`docs/RESEARCH_NOTES.md`](docs/RESEARCH_NOTES.md)
-- [`docs/SUBMISSION.md`](docs/SUBMISSION.md)
-
-### Cost/scalability model
-AEGISYNTH intentionally separates the **expensive control plane** (simulation/synthesis/verification, run when a new threat is discovered) from the **cheap data plane** (a compact compiled policy evaluated per transaction). The MVP therefore requires no paid LLM API and no proprietary Mastercard data. Production connectors can map existing payment feature stores and decisioning systems into the same compiler interface.
-
-### Responsible AI
-This repository is defensive and sandboxed. It does not contain instructions or credentials for attacking real payment systems. See [`SECURITY.md`](SECURITY.md).
+### AEGISYNTH
+**Attack → Counterexample → Synthesis → Verification → Defence**
