@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: aegisynth-api
+    runtime: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /health
+  - type: web
+    name: aegisynth-web
+    runtime: docker
+    rootDir: frontend
+    plan: free
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
