@@ -10,10 +10,16 @@ from .engine import AegisynthEngine
 from .schemas import LabResult
 from .verification import HAS_Z3
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 BENCHMARK_SEED = 42
 BENCHMARK_GENERATIONS = 4
 ATTACK_FAMILY = "ghost_merchant_swarm"
+BENCHMARK_CONTRACT = {
+    "baseline_attack_success_rate": 0.5383,
+    "final_attack_success_rate": 0.0743,
+    "final_fraud_coverage": 0.9257,
+    "benign_acceptance_rate": 0.9943,
+}
 
 app = FastAPI(
     title="AEGISYNTH API",
@@ -32,6 +38,13 @@ app.add_middleware(
 )
 
 STATIC_DIR = Path(__file__).parent / "static"
+
+
+def _benchmark() -> LabResult:
+    return AegisynthEngine(seed=BENCHMARK_SEED).run(
+        generations=BENCHMARK_GENERATIONS,
+        attack_family=ATTACK_FAMILY,
+    )
 
 
 @app.get("/health")
@@ -72,10 +85,34 @@ def meta():
 @app.get("/api/v1/demo", response_model=LabResult)
 def run_reproducible_demo():
     """Run the exact deterministic scenario referenced in the public benchmark."""
-    return AegisynthEngine(seed=BENCHMARK_SEED).run(
-        generations=BENCHMARK_GENERATIONS,
-        attack_family=ATTACK_FAMILY,
-    )
+    return _benchmark()
+
+
+@app.get("/api/v1/self-check")
+def self_check():
+    """Runtime smoke test for public benchmark and governance invariants."""
+    result = _benchmark()
+    checks = {
+        "benchmark_seed": result.seed == BENCHMARK_SEED,
+        "baseline_attack_success": result.baseline_attack_success_rate
+        == BENCHMARK_CONTRACT["baseline_attack_success_rate"],
+        "final_attack_success": result.final_attack_success_rate
+        == BENCHMARK_CONTRACT["final_attack_success_rate"],
+        "fraud_coverage": result.metrics.final_fraud_coverage
+        == BENCHMARK_CONTRACT["final_fraud_coverage"],
+        "benign_acceptance": result.metrics.benign_acceptance_rate
+        == BENCHMARK_CONTRACT["benign_acceptance_rate"],
+        "policy_verified": result.final_policy.verified is True,
+        "responsible_action": result.final_policy.action in {"STEP_UP", "REVIEW"},
+        "false_positive_budget": result.final_policy.false_positive_rate <= 0.02,
+        "dashboard_present": (STATIC_DIR / "index.html").exists(),
+    }
+    return {
+        "status": "pass" if all(checks.values()) else "fail",
+        "version": APP_VERSION,
+        "checks": checks,
+        "scope": "synthetic prototype runtime self-check",
+    }
 
 
 @app.get("/api/v1/lab/run", response_model=LabResult)
