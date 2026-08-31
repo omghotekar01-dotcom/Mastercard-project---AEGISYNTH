@@ -17,23 +17,28 @@ Conventional fraud systems output a score. AEGISYNTH targets the slower operatio
 - Counterexample-guided iterative synthesis (CEGIS-style feedback).
 - Z3 formal satisfiability + governance checks.
 - Responsible actions: `STEP_UP` / `REVIEW`, never automatic hard decline.
-- Live Next.js dashboard with attack-evolution and verification views.
+- Single-service FastAPI dashboard for the fastest free-tier deployment.
+- Optional richer Next.js dashboard.
 - FastAPI API with OpenAPI docs.
-- Automated tests + GitHub Actions.
+- Automated backend/API tests plus a ready-to-enable CI workflow template.
 - Docker + free-tier Render blueprint.
 
-### Run locally
+### Fastest local run
 
 ```bash
-# backend
 cd backend
 python -m venv .venv
 # Windows: .venv\Scripts\activate
 # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
+```
 
-# frontend (new terminal)
+Open `http://localhost:8000` for the working dashboard and `http://localhost:8000/docs` for OpenAPI.
+
+### Optional split Next.js frontend
+
+```bash
 cd frontend
 npm install
 # PowerShell: $env:NEXT_PUBLIC_API_URL="http://localhost:8000"
@@ -41,9 +46,16 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`. API docs: `http://localhost:8000/docs`.
+Open `http://localhost:3000`.
 
-Or run both with Docker:
+### Docker
+
+```bash
+docker build -t aegisynth ./backend
+docker run --rm -p 8000:8000 aegisynth
+```
+
+Or run the split stack with:
 
 ```bash
 docker compose up --build
@@ -55,8 +67,21 @@ docker compose up --build
 curl "http://localhost:8000/api/v1/lab/run?seed=42&generations=4"
 ```
 
-### Architecture
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/SUBMISSION.md`](docs/SUBMISSION.md).
+### Reproducible prototype benchmark
+Seed `42` in the committed synthetic simulator currently produces:
+
+- baseline attack success: **53.83%**
+- final attack success after compilation: **7.43%**
+- final fraud-family coverage: **92.57%**
+- benign acceptance: **99.43%**
+
+These numbers are synthetic prototype results, **not Mastercard production claims**. See [`submission/benchmark_seed42.json`](submission/benchmark_seed42.json).
+
+### Architecture and deployment
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+- [`docs/RESEARCH_NOTES.md`](docs/RESEARCH_NOTES.md)
+- [`docs/SUBMISSION.md`](docs/SUBMISSION.md)
 
 ### Cost/scalability model
 AEGISYNTH intentionally separates the **expensive control plane** (simulation/synthesis/verification, run when a new threat is discovered) from the **cheap data plane** (a compact compiled policy evaluated per transaction). The MVP therefore requires no paid LLM API and no proprietary Mastercard data. Production connectors can map existing payment feature stores and decisioning systems into the same compiler interface.
