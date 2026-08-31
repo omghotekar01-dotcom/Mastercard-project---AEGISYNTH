@@ -1,0 +1,52 @@
+from __future__ import annotations
+import random
+from .schemas import Transaction
+
+class PaymentWorld:
+    """Deterministic synthetic payment world; no real cardholder or merchant data is used."""
+
+    def __init__(self, seed: int = 42):
+        self.rng = random.Random(seed)
+
+    def _clip(self, x: float, lo: float = 0.0, hi: float = 1.0) -> float:
+        return max(lo, min(hi, x))
+
+    def benign(self, n: int = 1200) -> list[Transaction]:
+        rows: list[Transaction] = []
+        for i in range(n):
+            # Most benign merchants are mature; a minority are legitimate new/high-growth merchants.
+            startup = self.rng.random() < 0.055
+            rows.append(Transaction(
+                tx_id=f"B-{i:06d}",
+                amount=max(20, self.rng.lognormvariate(6.0 if not startup else 6.5, 0.7)),
+                merchant_age_hours=max(1, self.rng.gauss(24 * (420 if not startup else 5.5), 24 * (260 if not startup else 3.5))),
+                first_time_card_ratio=self._clip(self.rng.betavariate(2.0, 6.0) if not startup else self.rng.betavariate(4.0, 3.3)),
+                settlement_change_days=max(0, self.rng.gauss(150, 100) if not startup else self.rng.gauss(24, 18)),
+                temporal_burst_score=self._clip(self.rng.betavariate(1.5, 5.5) if not startup else self.rng.betavariate(3.0, 3.4)),
+                device_entropy=self._clip(self.rng.betavariate(2.5, 4.0)),
+                geo_velocity=max(0, self.rng.gauss(10, 15)),
+                label=0,
+            ))
+        return rows
+
+    def attack(self, n: int = 500, family: str = "ghost_merchant_swarm", hardness: float = 0.0) -> list[Transaction]:
+        """Generate a safe, fictional attack family. Hardness mutates values toward benign ranges."""
+        h = self._clip(hardness)
+        rows: list[Transaction] = []
+        for i in range(n):
+            rows.append(Transaction(
+                tx_id=f"A-{i:06d}",
+                amount=max(50, self.rng.lognormvariate(7.4 - 0.25*h, 0.55)),
+                merchant_age_hours=max(1, self.rng.gauss(42 + 70*h, 20 + 25*h)),
+                first_time_card_ratio=self._clip(self.rng.gauss(0.86 - 0.23*h, 0.08 + 0.02*h)),
+                settlement_change_days=max(0, self.rng.gauss(4 + 18*h, 4 + 4*h)),
+                temporal_burst_score=self._clip(self.rng.gauss(0.89 - 0.24*h, 0.07 + 0.03*h)),
+                device_entropy=self._clip(self.rng.gauss(0.78 - 0.18*h, 0.12)),
+                geo_velocity=max(0, self.rng.gauss(90 - 25*h, 35)),
+                label=1,
+                attack_family=family,
+            ))
+        return rows
+
+    def calibration_set(self, benign_n: int = 1200, attack_n: int = 500, hardness: float = 0.0):
+        return self.benign(benign_n), self.attack(attack_n, hardness=hardness)
