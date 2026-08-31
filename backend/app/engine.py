@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .schemas import LabResult, IterationResult, Policy
+from .schemas import LabResult, IterationResult, Policy, CounterexampleTrace
 from .simulator import PaymentWorld
 from .policy import DefenceCompiler, score_policy, matches
 from .verification import verify_policy
@@ -30,6 +30,7 @@ class AegisynthEngine:
         verification_notes: list[str] = []
 
         for generation in range(1, generations + 1):
+            training_attack_count = len(current_attacks)
             candidate = compiler.synthesize(benign, current_attacks, generation)
             harder = world.attack(700, attack_family, hardness=min(0.18*generation, 0.72))
             counterexamples = [tx for tx in harder if not matches(candidate, tx)]
@@ -40,11 +41,20 @@ class AegisynthEngine:
             ok, notes = verify_policy(candidate, self.max_fpr)
             candidate.verified = ok
 
+            trace = CounterexampleTrace(
+                training_attack_count=training_attack_count,
+                redteam_attack_count=len(harder),
+                escaped_count=len(counterexamples),
+                escaped_rate=round(len(counterexamples) / max(1, len(harder)), 4),
+                sample_tx_ids=[tx.tx_id for tx in counterexamples[:5]],
+            )
+
             iterations.append(IterationResult(
                 iteration=generation,
                 candidate=candidate,
                 counterexamples=len(counterexamples),
                 attack_success_rate=round(1 - s.coverage, 4),
+                trace=trace,
             ))
             final_policy = candidate
             verification_notes = notes
