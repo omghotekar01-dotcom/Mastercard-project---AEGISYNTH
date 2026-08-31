@@ -1,15 +1,28 @@
 from __future__ import annotations
+
 try:
-    from z3 import Real, Solver, And, sat
+    from z3 import And, Real, Solver, sat
     HAS_Z3 = True
 except ImportError:  # local/offline fallback; production requirements install z3-solver
     HAS_Z3 = False
+
 from .schemas import Policy
 
 ALLOWED_ACTIONS = {"PASS", "STEP_UP", "REVIEW"}
+DEFAULT_MAX_POLICY_LATENCY_MS = 5.0
 
 
-def verify_policy(policy: Policy, max_fpr: float = 0.02) -> tuple[bool, list[str]]:
+def verify_policy(
+    policy: Policy,
+    max_fpr: float = 0.02,
+    max_latency_ms: float = DEFAULT_MAX_POLICY_LATENCY_MS,
+) -> tuple[bool, list[str]]:
+    """Verify policy governance, business budgets, and formal feature-domain consistency.
+
+    The verifier intentionally checks only properties represented by the compact policy artifact.
+    It does not claim end-to-end payment-network performance or production certification.
+    """
+
     notes: list[str] = []
     if policy.action not in ALLOWED_ACTIONS:
         return False, ["Action is not allowed"]
@@ -17,6 +30,11 @@ def verify_policy(policy: Policy, max_fpr: float = 0.02) -> tuple[bool, list[str
         return False, ["Compiled fraud defences may not use PASS as the triggered action"]
     if policy.false_positive_rate > max_fpr:
         return False, ["False-positive budget exceeded"]
+    if policy.estimated_latency_ms > max_latency_ms:
+        return False, [
+            f"Estimated policy latency {policy.estimated_latency_ms:.2f} ms exceeds "
+            f"the configured {max_latency_ms:.2f} ms budget"
+        ]
 
     if HAS_Z3:
         age = Real("age")
@@ -24,7 +42,7 @@ def verify_policy(policy: Policy, max_fpr: float = 0.02) -> tuple[bool, list[str
         settle = Real("settle")
         burst = Real("burst")
         solver = Solver()
-        solver.add(And(age >= 0, age <= 24*365*20))
+        solver.add(And(age >= 0, age <= 24 * 365 * 20))
         solver.add(And(card >= 0, card <= 1))
         solver.add(And(settle >= 0, settle <= 3650))
         solver.add(And(burst >= 0, burst <= 1))
@@ -46,10 +64,13 @@ def verify_policy(policy: Policy, max_fpr: float = 0.02) -> tuple[bool, list[str
             return False, ["Policy conditions are outside valid domains"]
         formal_note = "Offline verifier: domain constraints satisfied (Z3 used when installed)."
 
-    notes.extend([
-        formal_note,
-        f"False-positive rate {policy.false_positive_rate:.2%} is within {max_fpr:.2%} budget.",
-        "Triggered action is step-up/review only; no autonomous hard decline is emitted.",
-        "Policy uses operational payment features only; no protected demographic attributes are present.",
-    ])
+    notes.extend(
+        [
+            formal_note,
+            f"False-positive rate {policy.false_positive_rate:.2%} is within {max_fpr:.2%} budget.",
+            f"Estimated policy latency {policy.estimated_latency_ms:.2f} ms is within {max_latency_ms:.2f} ms budget.",
+            "Triggered action is step-up/review only; no autonomous hard decline is emitted.",
+            "Policy uses operational payment features only; no protected demographic attributes are present.",
+        ]
+    )
     return True, notes
