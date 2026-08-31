@@ -22,3 +22,17 @@ def test_verifier_accepts_compiler_output():
     ok, notes = verify_policy(result.final_policy)
     assert ok
     assert len(notes) >= 3
+
+
+def test_counterexample_trace_is_consistent_and_deterministic():
+    a = AegisynthEngine(seed=42).run(generations=4)
+    b = AegisynthEngine(seed=42).run(generations=4)
+
+    assert [i.trace.model_dump() for i in a.iterations] == [i.trace.model_dump() for i in b.iterations]
+    for iteration in a.iterations:
+        trace = iteration.trace
+        assert trace.redteam_attack_count == 700
+        assert trace.escaped_count == iteration.counterexamples
+        assert trace.escaped_rate == iteration.attack_success_rate
+        assert len(trace.sample_tx_ids) <= 5
+        assert all(tx_id.startswith("A-") for tx_id in trace.sample_tx_ids)
