@@ -5,6 +5,8 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 Action = Literal["PASS", "STEP_UP", "REVIEW"]
+ApprovalStatus = Literal["HUMAN_APPROVAL_REQUIRED", "APPROVED", "REJECTED"]
+DeploymentStatus = Literal["NOT_DEPLOYED", "CANARY", "ROLLED_BACK"]
 
 
 class Transaction(BaseModel):
@@ -74,3 +76,18 @@ class LabResult(BaseModel):
     final_policy: Policy
     verification_notes: list[str]
     metrics: LabMetrics
+
+
+class ReviewPackage(BaseModel):
+    """Immutable review handoff generated after synthesis and verification."""
+
+    package_version: str = "1.0"
+    artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    attack_family: str = Field(min_length=1, max_length=64)
+    seed: int = Field(ge=0)
+    policy: Policy
+    verification_notes: list[str]
+    approval_status: ApprovalStatus = "HUMAN_APPROVAL_REQUIRED"
+    deployment_status: DeploymentStatus = "NOT_DEPLOYED"
+    synthetic_only: bool = True
+    production_claim: bool = False
