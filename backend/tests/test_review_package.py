@@ -1,4 +1,4 @@
-from app.artifact import build_review_package
+from app.artifact import build_review_package, verify_review_package
 from app.engine import AegisynthEngine
 from app.main import app
 from fastapi.testclient import TestClient
@@ -13,6 +13,7 @@ def test_review_package_is_deterministic_for_same_result():
     assert package_a.artifact_sha256 == package_b.artifact_sha256
     assert len(package_a.artifact_sha256) == 64
     assert package_a.policy == package_b.policy
+    assert verify_review_package(package_a) is True
 
 
 def test_review_package_changes_when_policy_result_changes():
@@ -20,6 +21,23 @@ def test_review_package_changes_when_policy_result_changes():
     package_b = build_review_package(AegisynthEngine(seed=43).run(generations=4))
 
     assert package_a.artifact_sha256 != package_b.artifact_sha256
+
+
+def test_review_package_detects_policy_tampering():
+    package = build_review_package(AegisynthEngine(seed=42).run(generations=4))
+    tampered = package.model_copy(deep=True)
+    tampered.policy.merchant_age_max += 1
+
+    assert verify_review_package(package) is True
+    assert verify_review_package(tampered) is False
+
+
+def test_review_package_detects_verification_note_tampering():
+    package = build_review_package(AegisynthEngine(seed=42).run(generations=4))
+    tampered = package.model_copy(deep=True)
+    tampered.verification_notes = [*tampered.verification_notes, "altered"]
+
+    assert verify_review_package(tampered) is False
 
 
 def test_review_package_requires_human_approval_and_starts_undeployed():
@@ -56,3 +74,4 @@ def test_self_check_includes_governance_handoff_checks():
     assert payload["checks"]["human_approval_required"] is True
     assert payload["checks"]["not_auto_deployed"] is True
     assert payload["checks"]["artifact_fingerprint"] is True
+    assert payload["checks"]["artifact_integrity"] is True
