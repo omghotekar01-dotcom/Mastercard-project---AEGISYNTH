@@ -36,7 +36,7 @@ Policy Repair
     ↓
 Formal + Business Verification
     ↓
-Human-Reviewable Defence Package
+Integrity-Stamped Human Review Package
 ```
 
 The expensive intelligence runs in an offline **control plane**. The resulting policy is a small deterministic object suitable for integration into a real-time **data plane** — with **no per-transaction LLM call**.
@@ -55,6 +55,8 @@ The expensive intelligence runs in an offline **control plane**. The resulting p
 | Strict false-positive budget | ✅ Working |
 | Z3-backed policy verification | ✅ Working |
 | STEP_UP / REVIEW governance only | ✅ Working |
+| Deterministic SHA-256 review-package fingerprint | ✅ Working |
+| Explicit human-approval / not-deployed state | ✅ Working |
 | Reproducible seed-42 benchmark | ✅ Working |
 | Public FastAPI + dashboard deployment | ✅ Live |
 | Runtime self-check endpoint | ✅ Working |
@@ -88,6 +90,7 @@ Then open:
 - Dashboard: `http://localhost:8000`
 - OpenAPI: `http://localhost:8000/docs`
 - Reproducible benchmark: `http://localhost:8000/api/v1/demo`
+- Human review package: `http://localhost:8000/api/v1/review-package`
 - Runtime self-check: `http://localhost:8000/api/v1/self-check`
 - Readiness: `http://localhost:8000/ready`
 
@@ -115,8 +118,9 @@ flowchart LR
     E --> F[Counterexample Engine]
     F -->|bypass found| E
     F -->|candidate survives| G[Z3 + Business Verification]
-    G --> H[Human Review Package]
-    H --> I[Compiled lightweight policy]
+    G --> H[Integrity-Stamped Review Package]
+    H --> I[Human Approval Gate]
+    I --> J[Compiled lightweight policy]
 ```
 
 ### Control plane vs data plane
@@ -127,14 +131,15 @@ flowchart TB
       S[Simulate] --> M[Mutate]
       M --> Y[Synthesize]
       Y --> V[Verify]
+      V --> H[Build review artifact]
     end
-    V --> P[Versioned defence policy]
+    H --> P[Human approval gate]
     subgraph DP[Online / Data Plane]
       X[Payment signals] --> R[Existing risk engine]
       R --> P2[Compiled AEGISYNTH policy]
       P2 --> O[Pass / Step-up / Review]
     end
-    P -. deploy after human approval .-> P2
+    P -. external deployment after approval .-> P2
 ```
 
 ---
@@ -154,7 +159,7 @@ Every bypass becomes a **counterexample** used in the next synthesis round.
 
 ---
 
-## Defence package
+## Defence package and governance handoff
 
 A compiled policy is intentionally small, explainable and reviewable:
 
@@ -168,7 +173,14 @@ THEN STEP_UP
 
 The compiler optimizes fraud-family coverage subject to a strict false-positive budget. The verifier checks valid feature domains, allowed actions, policy satisfiability and governance constraints.
 
-**No autonomous hard decline is emitted.**
+After verification, AEGISYNTH builds a deterministic review package containing the policy, verification evidence, benchmark context and a SHA-256 integrity fingerprint. The fingerprint is an **integrity identifier, not a digital signature**. Every generated package starts with:
+
+- `approval_status = HUMAN_APPROVAL_REQUIRED`
+- `deployment_status = NOT_DEPLOYED`
+- `synthetic_only = true`
+- `production_claim = false`
+
+This makes the prototype's human-governance boundary executable rather than merely documented. **No autonomous hard decline or automatic deployment is emitted.**
 
 ---
 
@@ -180,6 +192,7 @@ The compiler optimizes fraud-family coverage subject to a strict false-positive 
 | `GET /ready` | Readiness + verifier mode |
 | `GET /api/v1/meta` | Scope, benchmark and governance metadata |
 | `GET /api/v1/demo` | Exact submitted seed-42 benchmark |
+| `GET /api/v1/review-package` | Integrity-stamped policy handoff requiring human approval |
 | `GET /api/v1/self-check` | Runtime benchmark + governance smoke test |
 | `GET /api/v1/lab/run?seed=...&generations=...` | New deterministic synthetic scenario |
 | `GET /docs` | Interactive OpenAPI documentation |
@@ -201,7 +214,9 @@ Tests cover:
 - responsible actions
 - rejection of invalid policy domains
 - absence of sensitive demographic policy features
-- counterexample semantics
+- counterexample semantics and deterministic trace metadata
+- review-package fingerprint determinism and mutation sensitivity
+- explicit human-approval / not-deployed governance state
 - synthetic-only data contract
 
 Run locally:
@@ -236,10 +251,11 @@ See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 1. **Defensive-only.** No real payment credentials, merchants or customer PII.
 2. **Human governed.** AI can synthesize a recommendation; humans approve deployment.
-3. **Cheap online path.** Generative intelligence is not invoked for every payment.
-4. **Reproducible claims.** Public benchmark values are tied to deterministic code and seed.
-5. **Adapter based.** A future pilot can map approved enterprise features without rewriting the compiler core.
-6. **Fail safe.** The triggered response is step-up/review, not autonomous hard decline.
+3. **Integrity traceable.** Review handoffs carry deterministic fingerprints so policy/evidence changes are detectable.
+4. **Cheap online path.** Generative intelligence is not invoked for every payment.
+5. **Reproducible claims.** Public benchmark values are tied to deterministic code and seed.
+6. **Adapter based.** A future pilot can map approved enterprise features without rewriting the compiler core.
+7. **Fail safe.** The triggered response is step-up/review, not autonomous hard decline.
 
 ---
 
@@ -247,6 +263,7 @@ See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ```text
 backend/app/
+├── artifact.py        # deterministic review package + integrity fingerprint
 ├── engine.py          # orchestration / adversarial loop
 ├── simulator.py       # safe synthetic payment world
 ├── policy.py          # compact policy compiler
@@ -255,7 +272,7 @@ backend/app/
 ├── main.py            # FastAPI + diagnostics
 └── static/index.html  # judge-facing single-service dashboard
 
-backend/tests/         # API, engine, benchmark and safety tests
+backend/tests/         # API, engine, benchmark, governance and safety tests
 docs/                  # architecture, deployment, research, claim matrix
 submission/            # reproducible benchmark contract
 frontend/              # optional richer split-service UI
@@ -270,4 +287,4 @@ AEGISYNTH is a sandboxed defensive research prototype. It does not provide real-
 ---
 
 ### AEGISYNTH
-**Attack → Counterexample → Synthesis → Verification → Defence**
+**Attack → Counterexample → Synthesis → Verification → Human Review → Defence**
