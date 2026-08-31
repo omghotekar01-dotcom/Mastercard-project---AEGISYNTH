@@ -1,9 +1,9 @@
-from pydantic import ValidationError
 import pytest
+from pydantic import ValidationError
 
 from app.engine import AegisynthEngine
 from app.policy import DefenceCompiler, matches
-from app.schemas import Policy, Transaction
+from app.schemas import Policy
 from app.simulator import PaymentWorld
 from app.verification import verify_policy
 
@@ -34,19 +34,17 @@ def test_policy_schema_contains_only_approved_features():
     }.issubset(fields)
 
 
-def test_verifier_rejects_invalid_policy_domain():
-    invalid = Policy(
-        policy_id="INVALID",
-        merchant_age_max=-1,
-        first_time_card_ratio_min=0.5,
-        settlement_change_days_max=10,
-        temporal_burst_score_min=0.7,
-        action="STEP_UP",
-        false_positive_rate=0.0,
-    )
-    ok, notes = verify_policy(invalid)
-    assert ok is False
-    assert notes
+def test_schema_rejects_invalid_policy_domain():
+    with pytest.raises(ValidationError):
+        Policy(
+            policy_id="INVALID",
+            merchant_age_max=-1,
+            first_time_card_ratio_min=0.5,
+            settlement_change_days_max=10,
+            temporal_burst_score_min=0.7,
+            action="STEP_UP",
+            false_positive_rate=0.0,
+        )
 
 
 def test_verifier_rejects_pass_as_triggered_defence():
