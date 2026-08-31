@@ -1,18 +1,24 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 
 from .schemas import LabResult, ReviewPackage
 
 
-def _canonical_payload(result: LabResult) -> bytes:
-    """Return stable bytes for integrity fingerprinting of a compiled result."""
+def _canonical_fields(
+    attack_family: str,
+    seed: int,
+    policy: dict,
+    verification_notes: list[str],
+) -> bytes:
+    """Return stable bytes for integrity fingerprinting of a review handoff."""
     payload = {
-        "attack_family": result.attack_family,
-        "seed": result.seed,
-        "policy": result.final_policy.model_dump(mode="json"),
-        "verification_notes": result.verification_notes,
+        "attack_family": attack_family,
+        "seed": seed,
+        "policy": policy,
+        "verification_notes": verification_notes,
     }
     return json.dumps(
         payload,
@@ -20,6 +26,15 @@ def _canonical_payload(result: LabResult) -> bytes:
         separators=(",", ":"),
         ensure_ascii=True,
     ).encode("utf-8")
+
+
+def _canonical_payload(result: LabResult) -> bytes:
+    return _canonical_fields(
+        attack_family=result.attack_family,
+        seed=result.seed,
+        policy=result.final_policy.model_dump(mode="json"),
+        verification_notes=result.verification_notes,
+    )
 
 
 def build_review_package(result: LabResult) -> ReviewPackage:
@@ -40,3 +55,19 @@ def build_review_package(result: LabResult) -> ReviewPackage:
         synthetic_only=True,
         production_claim=False,
     )
+
+
+def verify_review_package(package: ReviewPackage) -> bool:
+    """Detect accidental or malicious modification of a review package.
+
+    This verifies content integrity only. It does not authenticate an author and is
+    deliberately not presented as a digital signature.
+    """
+    canonical = _canonical_fields(
+        attack_family=package.attack_family,
+        seed=package.seed,
+        policy=package.policy.model_dump(mode="json"),
+        verification_notes=package.verification_notes,
+    )
+    expected = hashlib.sha256(canonical).hexdigest()
+    return hmac.compare_digest(expected, package.artifact_sha256)
