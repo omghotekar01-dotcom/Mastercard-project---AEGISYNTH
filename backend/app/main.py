@@ -6,12 +6,12 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from .artifact import build_review_package
+from .artifact import build_review_package, verify_review_package
 from .engine import AegisynthEngine
 from .schemas import LabResult, ReviewPackage
 from .verification import HAS_Z3
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.3.1"
 BENCHMARK_SEED = 42
 BENCHMARK_GENERATIONS = 4
 ATTACK_FAMILY = "ghost_merchant_swarm"
@@ -102,6 +102,7 @@ def self_check():
         "human_approval_required": package.approval_status == "HUMAN_APPROVAL_REQUIRED",
         "not_auto_deployed": package.deployment_status == "NOT_DEPLOYED",
         "artifact_fingerprint": len(package.artifact_sha256) == 64,
+        "artifact_integrity": verify_review_package(package),
         "dashboard_present": (STATIC_DIR / "index.html").exists(),
     }
     return {
