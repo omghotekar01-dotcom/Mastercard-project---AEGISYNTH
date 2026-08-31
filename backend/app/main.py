@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -11,7 +11,7 @@ from .engine import AegisynthEngine
 from .schemas import LabResult, ReviewPackage
 from .verification import HAS_Z3
 
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.4.0"
 BENCHMARK_SEED = 42
 BENCHMARK_GENERATIONS = 4
 ATTACK_FAMILY = "ghost_merchant_swarm"
@@ -47,17 +47,26 @@ def _benchmark() -> LabResult:
 
 @app.get("/health")
 def health():
+    """Liveness only: confirms the API process is running."""
     return {"status": "ok", "service": "aegisynth", "version": APP_VERSION}
 
 
 @app.get("/ready")
-def ready():
+def ready(response: Response):
+    """Fail-closed readiness gate for capabilities promised by the demo."""
+    checks = {
+        "dashboard_present": (STATIC_DIR / "index.html").exists(),
+        "z3_formal_verifier_available": HAS_Z3,
+    }
+    is_ready = all(checks.values())
+    if not is_ready:
+        response.status_code = 503
     return {
-        "status": "ready",
+        "status": "ready" if is_ready else "not_ready",
         "service": "aegisynth",
         "version": APP_VERSION,
-        "dashboard": (STATIC_DIR / "index.html").exists(),
-        "formal_verifier": "z3" if HAS_Z3 else "domain-fallback",
+        "checks": checks,
+        "formal_verifier": "z3" if HAS_Z3 else "unavailable",
         "scope": "synthetic defensive payment-security laboratory",
     }
 
@@ -104,6 +113,7 @@ def self_check():
         "artifact_fingerprint": len(package.artifact_sha256) == 64,
         "artifact_integrity": verify_review_package(package),
         "dashboard_present": (STATIC_DIR / "index.html").exists(),
+        "z3_formal_verifier_available": HAS_Z3,
     }
     return {
         "status": "pass" if all(checks.values()) else "fail",
