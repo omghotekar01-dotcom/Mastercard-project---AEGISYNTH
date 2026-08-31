@@ -12,7 +12,9 @@ def test_lab_compiles_verified_policy():
 def test_compiled_policy_reduces_attack_success():
     result = AegisynthEngine(seed=11).run(generations=4)
     assert result.final_attack_success_rate < result.baseline_attack_success_rate
-    assert result.metrics["benign_acceptance_rate"] >= 0.98
+    assert result.metrics.benign_acceptance_rate >= 0.98
+    assert result.metrics.final_fraud_coverage == result.final_policy.fraud_coverage
+    assert result.metrics.final_false_positive_rate == result.final_policy.false_positive_rate
 
 
 def test_verifier_accepts_compiler_output():
