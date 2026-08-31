@@ -1,0 +1,12 @@
+{
+  "scope": "synthetic prototype benchmark; not Mastercard production traffic",
+  "seed": 42,
+  "generations": 4,
+  "attack_family": "ghost_merchant_swarm",
+  "baseline_attack_success_rate": 0.5383,
+  "final_attack_success_rate": 0.0743,
+  "final_fraud_family_coverage": 0.9257,
+  "final_false_positive_rate": 0.0057,
+  "benign_acceptance_rate": 0.9943,
+  "notes": "Harder red-team generations intentionally mutate toward benign feature ranges; per-generation bypass rate need not be monotonic."
+}
