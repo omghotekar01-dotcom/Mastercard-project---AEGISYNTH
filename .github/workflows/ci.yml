@@ -1,0 +1,54 @@
+name: AEGISYNTH CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aegisynth-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run test suite
+        run: pytest -q
+
+      - name: Verify deterministic benchmark contract
+        run: |
+          python - <<'PY'
+          from app.engine import AegisynthEngine
+          r = AegisynthEngine(seed=42).run(generations=4)
+          assert r.baseline_attack_success_rate == 0.5383
+          assert r.final_attack_success_rate == 0.0743
+          assert r.metrics.final_fraud_coverage == 0.9257
+          assert r.metrics.benign_acceptance_rate == 0.9943
+          assert r.final_policy.verified
+          assert r.final_policy.action in {"STEP_UP", "REVIEW"}
+          print("benchmark contract verified")
+          PY
