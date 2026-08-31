@@ -45,6 +45,16 @@ def test_reproducible_demo_matches_committed_benchmark():
     assert data['final_policy']['action'] in {'STEP_UP', 'REVIEW'}
 
 
+def test_runtime_self_check_passes_all_contracts():
+    res = client.get('/api/v1/self-check')
+    assert res.status_code == 200
+    data = res.json()
+    assert data['status'] == 'pass'
+    assert data['checks']
+    assert all(data['checks'].values())
+    assert 'synthetic' in data['scope'].lower()
+
+
 def test_lab_api_schema():
     res = client.get('/api/v1/lab/run?seed=42&generations=2')
     assert res.status_code == 200
