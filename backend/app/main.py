@@ -1,6 +1,8 @@
 from __future__ import annotations
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from .engine import AegisynthEngine
 from .schemas import LabResult
 
@@ -27,3 +29,6 @@ def run_lab(
     generations: int = Query(4, ge=1, le=8),
 ):
     return AegisynthEngine(seed=seed).run(generations=generations)
+
+STATIC_DIR = Path(__file__).parent / "static"
+app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="dashboard")
