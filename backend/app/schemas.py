@@ -39,11 +39,22 @@ class Policy(BaseModel):
     explanation: str = Field(default="", max_length=1000)
 
 
+class CounterexampleTrace(BaseModel):
+    """Audit-friendly summary of escaped synthetic variants for one generation."""
+
+    training_attack_count: int = Field(ge=1)
+    redteam_attack_count: int = Field(ge=1)
+    escaped_count: int = Field(ge=0)
+    escaped_rate: float = Field(ge=0, le=1)
+    sample_tx_ids: list[str] = Field(default_factory=list, max_length=5)
+
+
 class IterationResult(BaseModel):
     iteration: int = Field(ge=1)
     candidate: Policy
     counterexamples: int = Field(ge=0)
     attack_success_rate: float = Field(ge=0, le=1)
+    trace: CounterexampleTrace
 
 
 class LabMetrics(BaseModel):
