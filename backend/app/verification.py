@@ -90,6 +90,10 @@ def verify_policy(
             f"Estimated policy latency {policy.estimated_latency_ms:.2f} ms exceeds "
             f"the configured {max_latency_ms:.2f} ms budget"
         ]
+    if policy.counterexamples_remaining != 0:
+        return False, [
+            f"Known counterexamples remain: {policy.counterexamples_remaining}; verification requires zero"
+        ]
 
     if HAS_Z3:
         age = Real("age")
@@ -124,6 +128,7 @@ def verify_policy(
             formal_note,
             f"False-positive rate {policy.false_positive_rate:.2%} is within {max_fpr:.2%} budget.",
             f"Estimated policy latency {policy.estimated_latency_ms:.2f} ms is within {max_latency_ms:.2f} ms budget.",
+            "Counterexample budget satisfied: zero known counterexamples remain.",
             "Triggered action is step-up/review only; no autonomous hard decline is emitted.",
             "Policy uses operational payment features only; no protected demographic attributes are present.",
         ]

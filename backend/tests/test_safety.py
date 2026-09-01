@@ -80,6 +80,27 @@ def test_verifier_rejects_policy_above_latency_budget():
     assert any("latency" in note.lower() and "exceeds" in note.lower() for note in notes)
 
 
+def test_verifier_rejects_policy_with_known_counterexamples():
+    policy = AegisynthEngine(seed=42).run(generations=1).final_policy.model_copy(
+        update={"counterexamples_remaining": 1}
+    )
+
+    ok, notes = verify_policy(policy)
+
+    assert ok is False
+    assert any("counterexamples" in note.lower() and "zero" in note.lower() for note in notes)
+
+
+def test_verified_policy_records_zero_counterexample_guardrail():
+    policy = AegisynthEngine(seed=42).run(generations=4).final_policy
+
+    ok, notes = verify_policy(policy)
+
+    assert ok is True
+    assert policy.counterexamples_remaining == 0
+    assert any("zero known counterexamples" in note.lower() for note in notes)
+
+
 def test_verifier_fails_closed_on_invalid_business_budgets():
     policy = AegisynthEngine(seed=42).run(generations=1).final_policy
     invalid_configs = [
