@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 try:
     from z3 import And, Real, Solver, sat
     HAS_Z3 = True
@@ -12,6 +14,19 @@ ALLOWED_ACTIONS = {"PASS", "STEP_UP", "REVIEW"}
 DEFAULT_MAX_POLICY_LATENCY_MS = 5.0
 
 
+def _validate_budgets(max_fpr: float, max_latency_ms: float) -> tuple[bool, list[str]]:
+    """Reject malformed verifier configuration before evaluating a policy.
+
+    Business guardrails are safety boundaries. Invalid budgets must fail closed rather than
+    accidentally weakening verification through negative, non-finite, or out-of-range values.
+    """
+    if not math.isfinite(max_fpr) or not 0 <= max_fpr <= 1:
+        return False, ["Verifier configuration invalid: max_fpr must be finite and within [0, 1]"]
+    if not math.isfinite(max_latency_ms) or max_latency_ms <= 0:
+        return False, ["Verifier configuration invalid: max_latency_ms must be finite and > 0"]
+    return True, []
+
+
 def verify_policy(
     policy: Policy,
     max_fpr: float = 0.02,
@@ -22,6 +37,10 @@ def verify_policy(
     The verifier intentionally checks only properties represented by the compact policy artifact.
     It does not claim end-to-end payment-network performance or production certification.
     """
+
+    budgets_ok, budget_notes = _validate_budgets(max_fpr, max_latency_ms)
+    if not budgets_ok:
+        return False, budget_notes
 
     notes: list[str] = []
     if policy.action not in ALLOWED_ACTIONS:
