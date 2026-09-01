@@ -24,6 +24,20 @@ def test_review_package_rejects_stale_summary_metrics():
         build_review_package(result)
 
 
+def test_review_package_rejects_attack_reduction_beyond_reported_precision():
+    result = AegisynthEngine(seed=42).run(generations=4)
+    result.metrics = result.metrics.model_copy(
+        update={
+            "attack_success_reduction": round(
+                result.metrics.attack_success_reduction + 0.0002, 4
+            )
+        }
+    )
+
+    with pytest.raises(ValueError, match="summary metrics are inconsistent"):
+        build_review_package(result)
+
+
 def test_review_package_rejects_noncontiguous_iteration_history():
     result = AegisynthEngine(seed=42).run(generations=4)
     result.iterations[2] = result.iterations[2].model_copy(update={"iteration": 4})
