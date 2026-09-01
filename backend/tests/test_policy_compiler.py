@@ -141,6 +141,24 @@ def test_compiler_rejects_non_finite_policy_features(population, feature, value)
 @pytest.mark.parametrize(
     "population,feature,value",
     [
+        ("benign", "merchant_age_hours", True),
+        ("benign", "first_time_card_ratio", "0.7"),
+        ("attack", "settlement_change_days", None),
+        ("attack", "temporal_burst_score", False),
+    ],
+)
+def test_compiler_rejects_schema_bypassed_non_numeric_policy_features(population, feature, value):
+    benign, attacks = fixture_world()
+    rows = benign if population == "benign" else attacks
+    rows[0].__dict__[feature] = value
+
+    with pytest.raises(ValueError, match=rf"{population} transaction .* has non-numeric {feature}"):
+        DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=3)
+
+
+@pytest.mark.parametrize(
+    "population,feature,value",
+    [
         ("benign", "merchant_age_hours", -1.0),
         ("benign", "first_time_card_ratio", 1.01),
         ("attack", "settlement_change_days", -0.1),
@@ -159,4 +177,10 @@ def test_compiler_rejects_out_of_range_policy_features(population, feature, valu
 @pytest.mark.parametrize("invalid_budget", [-0.01, 1.01, float("nan"), float("inf"), float("-inf")])
 def test_compiler_rejects_malformed_false_positive_budgets(invalid_budget):
     with pytest.raises(ValueError, match=r"max_fpr must be finite and within \[0, 1\]"):
+        DefenceCompiler(max_fpr=invalid_budget)
+
+
+@pytest.mark.parametrize("invalid_budget", [True, False, "0.02", None])
+def test_compiler_rejects_non_numeric_false_positive_budgets(invalid_budget):
+    with pytest.raises(ValueError, match=r"max_fpr must be a real numeric value"):
         DefenceCompiler(max_fpr=invalid_budget)

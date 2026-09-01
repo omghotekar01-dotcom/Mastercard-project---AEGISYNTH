@@ -39,6 +39,11 @@ def score_policy(policy: Policy, benign: list[Transaction], attacks: list[Transa
     )
 
 
+def _is_real_number(value: object) -> bool:
+    """Accept real scalar evidence, but never Python booleans masquerading as 0/1."""
+    return not isinstance(value, bool) and isinstance(value, (int, float))
+
+
 def _validate_policy_features(tx: Transaction, population: str) -> None:
     """Validate policy-driving transaction features at the compiler trust boundary."""
     bounds = {
@@ -49,7 +54,9 @@ def _validate_policy_features(tx: Transaction, population: str) -> None:
     }
     for feature, (minimum, maximum) in bounds.items():
         value = getattr(tx, feature)
-        if not isinstance(value, (int, float)) or not math.isfinite(value):
+        if not _is_real_number(value):
+            raise ValueError(f"{population} transaction {tx.tx_id!r} has non-numeric {feature}")
+        if not math.isfinite(value):
             raise ValueError(f"{population} transaction {tx.tx_id!r} has non-finite {feature}")
         if value < minimum or (maximum is not None and value > maximum):
             upper = f", {maximum:g}" if maximum is not None else ""
@@ -115,6 +122,8 @@ class DefenceCompiler:
     """Searches a compact policy space for the best safe generalization."""
 
     def __init__(self, max_fpr: float = 0.02):
+        if not _is_real_number(max_fpr):
+            raise ValueError("max_fpr must be a real numeric value")
         if not math.isfinite(max_fpr) or not 0 <= max_fpr <= 1:
             raise ValueError("max_fpr must be finite and within [0, 1]")
         self.max_fpr = max_fpr
