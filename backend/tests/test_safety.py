@@ -91,6 +91,20 @@ def test_verifier_rejects_policy_with_known_counterexamples():
     assert any("counterexamples" in note.lower() and "zero" in note.lower() for note in notes)
 
 
+def test_verifier_rejects_boolean_counterexample_count_when_schema_is_bypassed():
+    base = AegisynthEngine(seed=42).run(generations=1).final_policy
+    payload = base.model_dump()
+    payload["counterexamples_remaining"] = False
+    policy = Policy.model_construct(**payload)
+
+    ok, notes = verify_policy(policy)
+
+    assert ok is False
+    assert notes
+    assert "counterexamples_remaining" in notes[0]
+    assert "integer" in notes[0].lower()
+
+
 def test_verified_policy_records_zero_counterexample_guardrail():
     policy = AegisynthEngine(seed=42).run(generations=4).final_policy
 

@@ -52,7 +52,7 @@ def _validate_policy_numeric_fields(policy: Policy) -> tuple[bool, list[str]]:
         return False, [
             "Policy numeric field invalid: estimated_latency_ms must be finite and >= 0"
         ]
-    if not isinstance(policy.counterexamples_remaining, int) or policy.counterexamples_remaining < 0:
+    if type(policy.counterexamples_remaining) is not int or policy.counterexamples_remaining < 0:
         return False, [
             "Policy numeric field invalid: counterexamples_remaining must be a non-negative integer"
         ]
