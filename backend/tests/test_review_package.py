@@ -1,7 +1,25 @@
-from app.artifact import build_review_package, verify_review_package
+import hashlib
+
+from app.artifact import _canonical_fields, build_review_package, verify_review_package
 from app.engine import AegisynthEngine
 from app.main import app
 from fastapi.testclient import TestClient
+
+
+def _recompute_digest(package):
+    canonical = _canonical_fields(
+        package_version=package.package_version,
+        attack_family=package.attack_family,
+        seed=package.seed,
+        provenance=package.provenance.model_dump(mode="json"),
+        policy=package.policy.model_dump(mode="json"),
+        verification_notes=package.verification_notes,
+        approval_status=package.approval_status,
+        deployment_status=package.deployment_status,
+        synthetic_only=package.synthetic_only,
+        production_claim=package.production_claim,
+    )
+    return hashlib.sha256(canonical).hexdigest()
 
 
 def test_review_package_is_deterministic_for_same_result():
@@ -89,6 +107,34 @@ def test_review_package_detects_governance_and_scope_tampering():
     claim_tampered = package.model_copy(deep=True)
     claim_tampered.production_claim = True
     assert verify_review_package(claim_tampered) is False
+
+
+def test_review_package_rejects_unsupported_contract_even_with_recomputed_digest():
+    package = build_review_package(AegisynthEngine(seed=42).run(generations=4))
+
+    unsupported_version = package.model_copy(deep=True)
+    unsupported_version.package_version = "9.9"
+    unsupported_version.artifact_sha256 = _recompute_digest(unsupported_version)
+    assert verify_review_package(unsupported_version) is False
+
+    unknown_verifier = package.model_copy(deep=True)
+    unknown_verifier.provenance.verifier_id = "unknown-verifier"
+    unknown_verifier.artifact_sha256 = _recompute_digest(unknown_verifier)
+    assert verify_review_package(unknown_verifier) is False
+
+
+def test_review_package_rejects_unsafe_governance_even_with_recomputed_digest():
+    package = build_review_package(AegisynthEngine(seed=42).run(generations=4))
+
+    approved = package.model_copy(deep=True)
+    approved.approval_status = "APPROVED"
+    approved.artifact_sha256 = _recompute_digest(approved)
+    assert verify_review_package(approved) is False
+
+    production_claim = package.model_copy(deep=True)
+    production_claim.production_claim = True
+    production_claim.artifact_sha256 = _recompute_digest(production_claim)
+    assert verify_review_package(production_claim) is False
 
 
 def test_review_package_requires_human_approval_and_starts_undeployed():
