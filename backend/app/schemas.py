@@ -78,13 +78,24 @@ class LabResult(BaseModel):
     metrics: LabMetrics
 
 
+class CompilationProvenance(BaseModel):
+    """Deterministic metadata describing how a review artifact was produced."""
+
+    compiler_id: str = Field(min_length=1, max_length=80)
+    verifier_id: str = Field(min_length=1, max_length=80)
+    generation_count: int = Field(ge=1, le=8)
+    max_false_positive_rate: float = Field(ge=0, le=1)
+    max_policy_latency_ms: float = Field(gt=0)
+
+
 class ReviewPackage(BaseModel):
     """Immutable review handoff generated after synthesis and verification."""
 
-    package_version: str = "1.0"
+    package_version: str = "1.1"
     artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     attack_family: str = Field(min_length=1, max_length=64)
     seed: int = Field(ge=0)
+    provenance: CompilationProvenance
     policy: Policy
     verification_notes: list[str]
     approval_status: ApprovalStatus = "HUMAN_APPROVAL_REQUIRED"
