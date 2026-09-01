@@ -3,14 +3,22 @@ from app.schemas import Transaction
 
 
 def tx(tx_id: str, *, age: float, card: float, settle: float, burst: float, fraud: bool) -> Transaction:
+    """Build a minimal synthetic transaction using the canonical API schema.
+
+    Compiler tests intentionally keep non-policy features at deterministic neutral values so
+    failures reflect compiler behaviour rather than fixture/schema drift.
+    """
     return Transaction(
         tx_id=tx_id,
+        amount=100.0,
         merchant_age_hours=age,
         first_time_card_ratio=card,
         settlement_change_days=settle,
         temporal_burst_score=burst,
-        amount=100.0,
-        is_fraud=fraud,
+        device_entropy=0.50,
+        geo_velocity=0.0,
+        label=int(fraud),
+        attack_family="ghost_merchant_swarm" if fraud else "benign",
     )
 
 
@@ -25,6 +33,8 @@ def fixture_world():
         tx("A-2", age=30, card=0.85, settle=3, burst=0.85, fraud=True),
         tx("A-3", age=40, card=0.80, settle=4, burst=0.80, fraud=True),
     ]
+    assert all(row.label == 0 and row.attack_family == "benign" for row in benign)
+    assert all(row.label == 1 and row.attack_family == "ghost_merchant_swarm" for row in attacks)
     return benign, attacks
 
 
