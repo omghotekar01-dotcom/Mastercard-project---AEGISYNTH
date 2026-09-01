@@ -97,6 +97,38 @@ def test_verifier_fails_closed_on_invalid_business_budgets():
         assert "configuration invalid" in notes[0].lower()
 
 
+def test_verifier_fails_closed_on_non_finite_policy_metrics():
+    base = AegisynthEngine(seed=42).run(generations=1).final_policy
+    poisoned_fields = {
+        "false_positive_rate": math.nan,
+        "fraud_coverage": math.inf,
+        "estimated_latency_ms": math.nan,
+        "merchant_age_max": math.inf,
+        "first_time_card_ratio_min": math.nan,
+    }
+
+    for field_name, bad_value in poisoned_fields.items():
+        payload = base.model_dump()
+        payload[field_name] = bad_value
+        policy = Policy.model_construct(**payload)
+        ok, notes = verify_policy(policy)
+        assert ok is False
+        assert notes
+        assert "numeric field invalid" in notes[0].lower()
+        assert field_name in notes[0]
+
+
+def test_verifier_rechecks_policy_domains_when_schema_validation_is_bypassed():
+    base = AegisynthEngine(seed=42).run(generations=1).final_policy
+    payload = base.model_dump()
+    payload["temporal_burst_score_min"] = 1.5
+    policy = Policy.model_construct(**payload)
+
+    ok, notes = verify_policy(policy)
+    assert ok is False
+    assert "temporal_burst_score_min" in notes[0]
+
+
 def test_compiler_output_satisfies_latency_budget():
     result = AegisynthEngine(seed=42).run(generations=4)
     assert result.final_policy.estimated_latency_ms <= DEFAULT_MAX_POLICY_LATENCY_MS
