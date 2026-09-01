@@ -14,32 +14,25 @@ ALLOWED_ACTIONS = {"PASS", "STEP_UP", "REVIEW"}
 DEFAULT_MAX_POLICY_LATENCY_MS = 5.0
 
 
-def _validate_budgets(max_fpr: float, max_latency_ms: float) -> tuple[bool, list[str]]:
-    """Reject malformed verifier configuration before evaluating a policy.
+def _is_real_number(value: object) -> bool:
+    return not isinstance(value, bool) and isinstance(value, (int, float))
 
-    Business guardrails are safety boundaries. Invalid budgets must fail closed rather than
-    accidentally weakening verification through negative, non-finite, or out-of-range values.
-    """
-    if isinstance(max_fpr, bool) or not isinstance(max_fpr, (int, float)):
+
+def _validate_budgets(max_fpr: float, max_latency_ms: float) -> tuple[bool, list[str]]:
+    """Reject malformed verifier configuration before evaluating a policy."""
+    if not _is_real_number(max_fpr):
         return False, ["Verifier configuration invalid: max_fpr must be a real numeric value"]
     if not math.isfinite(max_fpr) or not 0 <= max_fpr <= 1:
         return False, ["Verifier configuration invalid: max_fpr must be finite and within [0, 1]"]
-    if isinstance(max_latency_ms, bool) or not isinstance(max_latency_ms, (int, float)):
-        return False, [
-            "Verifier configuration invalid: max_latency_ms must be a real numeric value"
-        ]
+    if not _is_real_number(max_latency_ms):
+        return False, ["Verifier configuration invalid: max_latency_ms must be a real numeric value"]
     if not math.isfinite(max_latency_ms) or max_latency_ms <= 0:
         return False, ["Verifier configuration invalid: max_latency_ms must be finite and > 0"]
     return True, []
 
 
 def _validate_policy_numeric_fields(policy: Policy) -> tuple[bool, list[str]]:
-    """Defence-in-depth validation for numeric policy fields at the verifier boundary.
-
-    The normal Pydantic schema rejects malformed API payloads, but verification can also be
-    called from internal code or deserialized artifacts. Re-check the safety-critical numeric
-    contract here so NaN/Infinity cannot bypass comparisons such as ``value > budget``.
-    """
+    """Fail closed if schema-bypassed policy numerics are malformed."""
     bounded_fields = {
         "merchant_age_max": (policy.merchant_age_max, 0.0, float(24 * 365 * 20)),
         "first_time_card_ratio_min": (policy.first_time_card_ratio_min, 0.0, 1.0),
@@ -49,19 +42,17 @@ def _validate_policy_numeric_fields(policy: Policy) -> tuple[bool, list[str]]:
         "false_positive_rate": (policy.false_positive_rate, 0.0, 1.0),
     }
     for name, (value, lower, upper) in bounded_fields.items():
+        if not _is_real_number(value):
+            return False, [f"Policy numeric field invalid: {name} must be a real numeric value"]
         if not math.isfinite(value) or not lower <= value <= upper:
-            return False, [
-                f"Policy numeric field invalid: {name} must be finite and within [{lower:g}, {upper:g}]"
-            ]
+            return False, [f"Policy numeric field invalid: {name} must be finite and within [{lower:g}, {upper:g}]"]
 
+    if not _is_real_number(policy.estimated_latency_ms):
+        return False, ["Policy numeric field invalid: estimated_latency_ms must be a real numeric value"]
     if not math.isfinite(policy.estimated_latency_ms) or policy.estimated_latency_ms < 0:
-        return False, [
-            "Policy numeric field invalid: estimated_latency_ms must be finite and >= 0"
-        ]
+        return False, ["Policy numeric field invalid: estimated_latency_ms must be finite and >= 0"]
     if type(policy.counterexamples_remaining) is not int or policy.counterexamples_remaining < 0:
-        return False, [
-            "Policy numeric field invalid: counterexamples_remaining must be a non-negative integer"
-        ]
+        return False, ["Policy numeric field invalid: counterexamples_remaining must be a non-negative integer"]
     return True, []
 
 
@@ -70,12 +61,7 @@ def verify_policy(
     max_fpr: float = 0.02,
     max_latency_ms: float = DEFAULT_MAX_POLICY_LATENCY_MS,
 ) -> tuple[bool, list[str]]:
-    """Verify policy governance, business budgets, and formal feature-domain consistency.
-
-    The verifier intentionally checks only properties represented by the compact policy artifact.
-    It does not claim end-to-end payment-network performance or production certification.
-    """
-
+    """Verify policy governance, business budgets, and formal feature-domain consistency."""
     budgets_ok, budget_notes = _validate_budgets(max_fpr, max_latency_ms)
     if not budgets_ok:
         return False, budget_notes
