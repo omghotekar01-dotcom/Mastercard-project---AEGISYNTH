@@ -92,10 +92,8 @@ def test_verifier_rejects_policy_with_known_counterexamples():
 
 
 def test_verifier_rejects_boolean_counterexample_count_when_schema_is_bypassed():
-    base = AegisynthEngine(seed=42).run(generations=1).final_policy
-    payload = base.model_dump()
-    payload["counterexamples_remaining"] = False
-    policy = Policy.model_construct(**payload)
+    policy = AegisynthEngine(seed=42).run(generations=1).final_policy.model_copy(deep=True)
+    object.__setattr__(policy, "counterexamples_remaining", False)
 
     ok, notes = verify_policy(policy)
 
