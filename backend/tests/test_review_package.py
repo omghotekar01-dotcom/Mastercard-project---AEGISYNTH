@@ -1,5 +1,8 @@
 import hashlib
 
+import pytest
+
+import app.artifact as artifact_module
 from app.artifact import _canonical_fields, build_review_package, verify_review_package
 from app.engine import AegisynthEngine
 from app.main import app
@@ -53,6 +56,30 @@ def test_review_package_binds_compilation_provenance():
     assert package.provenance.max_policy_latency_ms == 5.0
     assert package.policy.false_positive_rate <= package.provenance.max_false_positive_rate
     assert package.policy.estimated_latency_ms <= package.provenance.max_policy_latency_ms
+
+
+def test_review_package_reverifies_policy_under_declared_budgets():
+    result = AegisynthEngine(seed=42).run(generations=4)
+    result.final_policy.false_positive_rate = 0.5
+
+    with pytest.raises(ValueError, match="verified final policy"):
+        build_review_package(result)
+
+
+def test_review_package_rejects_stale_verification_evidence():
+    result = AegisynthEngine(seed=42).run(generations=4)
+    result.verification_notes = [*result.verification_notes, "stale evidence"]
+
+    with pytest.raises(ValueError, match="evidence is stale or inconsistent"):
+        build_review_package(result)
+
+
+def test_review_package_refuses_z3_provenance_without_z3(monkeypatch):
+    result = AegisynthEngine(seed=42).run(generations=4)
+    monkeypatch.setattr(artifact_module, "HAS_Z3", False)
+
+    with pytest.raises(RuntimeError, match="requires Z3"):
+        build_review_package(result)
 
 
 def test_review_package_detects_policy_tampering():

@@ -5,7 +5,11 @@ import hmac
 import json
 
 from .schemas import CompilationProvenance, LabResult, ReviewPackage
-from .verification import DEFAULT_MAX_POLICY_LATENCY_MS
+from .verification import (
+    DEFAULT_MAX_POLICY_LATENCY_MS,
+    HAS_Z3,
+    verify_policy,
+)
 
 COMPILER_ID = "compact-grid-search-v1"
 VERIFIER_ID = "z3-business-guardrails-v1"
@@ -86,6 +90,34 @@ def _canonical_payload(
     )
 
 
+def _validate_result_for_review(
+    result: LabResult,
+    max_fpr: float,
+    max_latency_ms: float,
+) -> None:
+    """Re-verify the exact final policy before creating a judge-facing handoff.
+
+    Review-package provenance declares the Z3 verifier and explicit business budgets.
+    Packaging therefore fails closed if Z3 is unavailable, if the final policy no longer
+    satisfies those budgets, or if the stored verification evidence is stale/tampered.
+    """
+    if not HAS_Z3:
+        raise RuntimeError(
+            "Review package requires Z3; refusing to claim z3-business-guardrails-v1 "
+            "provenance without the formal verifier"
+        )
+
+    verified, current_notes = verify_policy(
+        result.final_policy,
+        max_fpr=max_fpr,
+        max_latency_ms=max_latency_ms,
+    )
+    if not verified or not result.final_policy.verified:
+        raise ValueError("Review package requires a verified final policy under declared budgets")
+    if result.verification_notes != current_notes:
+        raise ValueError("Review package verification evidence is stale or inconsistent")
+
+
 def build_review_package(
     result: LabResult,
     max_fpr: float = DEFAULT_MAX_FPR,
@@ -98,6 +130,11 @@ def build_review_package(
     governance/scope state. Deployment remains NOT_DEPLOYED until an external
     human-governance system acts.
     """
+    _validate_result_for_review(
+        result,
+        max_fpr=max_fpr,
+        max_latency_ms=max_latency_ms,
+    )
     provenance = _provenance(result, max_fpr=max_fpr, max_latency_ms=max_latency_ms)
     digest = hashlib.sha256(_canonical_payload(result, provenance)).hexdigest()
     return ReviewPackage(
