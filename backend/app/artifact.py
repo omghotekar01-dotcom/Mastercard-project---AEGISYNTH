@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 import hashlib
 import hmac
 import json
@@ -20,7 +21,12 @@ DEPLOYMENT_STATUS = "NOT_DEPLOYED"
 SYNTHETIC_ONLY = True
 PRODUCTION_CLAIM = False
 _METRIC_PRECISION = 4
-_METRIC_ULP = 10 ** -_METRIC_PRECISION
+_METRIC_ULP = Decimal("0.0001")
+
+
+def _metric_delta(observed: float, expected: float) -> Decimal:
+    """Compare reported decimal metrics without binary-float boundary ambiguity."""
+    return abs(Decimal(str(observed)) - Decimal(str(expected)))
 
 
 def _canonical_fields(
@@ -121,7 +127,8 @@ def _validate_result_consistency(result: LabResult) -> None:
     # baseline_attack_success_rate is itself serialized at four decimals while the engine
     # computes the reduction from the pre-rounded baseline. Reconstructing from the public
     # LabResult can therefore differ by at most one unit in the last reported decimal.
-    if abs(observed_metrics["attack_success_reduction"] - expected_reduction) > _METRIC_ULP:
+    # Decimal comparison makes the inclusive 0.0001 boundary deterministic across runtimes.
+    if _metric_delta(observed_metrics["attack_success_reduction"], expected_reduction) > _METRIC_ULP:
         raise ValueError("Review package summary metrics are inconsistent with the final policy/run")
 
     expected_exact_metrics = {
