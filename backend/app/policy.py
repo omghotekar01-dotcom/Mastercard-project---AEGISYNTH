@@ -38,6 +38,26 @@ def score_policy(policy: Policy, benign: list[Transaction], attacks: list[Transa
         benign_hits=benign_hits,
     )
 
+
+def _validate_evaluation_populations(
+    benign: list[Transaction], attacks: list[Transaction]
+) -> None:
+    """Fail closed when compiler evidence populations are absent or mislabeled.
+
+    FPR and coverage are only meaningful when evaluated against non-empty, correctly
+    labeled populations. Refuse synthesis rather than allowing denominator fallbacks or
+    accidental dataset inversion to create misleading safety evidence.
+    """
+    if not benign:
+        raise ValueError("benign evaluation population must not be empty")
+    if not attacks:
+        raise ValueError("attack evaluation population must not be empty")
+    if any(tx.label != 0 for tx in benign):
+        raise ValueError("benign evaluation population must contain only label=0 transactions")
+    if any(tx.label != 1 for tx in attacks):
+        raise ValueError("attack evaluation population must contain only label=1 transactions")
+
+
 class DefenceCompiler:
     """Searches a compact policy space for the best safe generalization."""
 
@@ -47,6 +67,8 @@ class DefenceCompiler:
         self.max_fpr = max_fpr
 
     def synthesize(self, benign: list[Transaction], attacks: list[Transaction], generation: int) -> Policy:
+        _validate_evaluation_populations(benign, attacks)
+
         age_grid = [48, 72, 96, 120, 168, 240]
         card_grid = [0.50, 0.58, 0.64, 0.70, 0.76]
         settlement_grid = [7, 14, 21, 30, 45]

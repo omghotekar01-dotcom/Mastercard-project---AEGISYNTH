@@ -62,14 +62,44 @@ def test_compiler_output_respects_configured_false_positive_budget():
     assert policy.action == "STEP_UP"
 
 
-def test_empty_attack_set_does_not_create_fake_coverage():
+def test_score_policy_empty_attack_set_does_not_create_fake_coverage():
     benign, _ = fixture_world()
-    policy = DefenceCompiler(max_fpr=0.02).synthesize(benign, [], generation=3)
+    policy = DefenceCompiler(max_fpr=0.02).synthesize(benign, [tx(
+        "A-seed", age=20, card=0.90, settle=2, burst=0.90, fraud=True
+    )], generation=3)
     score = score_policy(policy, benign, [])
 
     assert score.blocked_attacks == 0
     assert score.coverage == 0.0
-    assert policy.fraud_coverage == 0.0
+
+
+@pytest.mark.parametrize("missing_side", ["benign", "attacks"])
+def test_compiler_rejects_empty_evaluation_populations(missing_side):
+    benign, attacks = fixture_world()
+    if missing_side == "benign":
+        benign = []
+    else:
+        attacks = []
+
+    expected_population = "attack" if missing_side == "attacks" else "benign"
+    with pytest.raises(ValueError, match=rf"{expected_population} evaluation population must not be empty"):
+        DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=3)
+
+
+def test_compiler_rejects_mislabeled_benign_population():
+    benign, attacks = fixture_world()
+    benign[0] = benign[0].model_copy(update={"label": 1})
+
+    with pytest.raises(ValueError, match="benign evaluation population must contain only label=0"):
+        DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=3)
+
+
+def test_compiler_rejects_mislabeled_attack_population():
+    benign, attacks = fixture_world()
+    attacks[0] = attacks[0].model_copy(update={"label": 0})
+
+    with pytest.raises(ValueError, match="attack evaluation population must contain only label=1"):
+        DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=3)
 
 
 @pytest.mark.parametrize("invalid_budget", [-0.01, 1.01, float("nan"), float("inf"), float("-inf")])
