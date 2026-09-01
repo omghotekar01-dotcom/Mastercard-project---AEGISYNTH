@@ -165,13 +165,31 @@ def _has_supported_review_contract(package: ReviewPackage) -> bool:
     )
 
 
-def verify_review_package(package: ReviewPackage) -> bool:
-    """Validate review-contract compatibility and detect protected-field modification.
+def _has_current_semantic_evidence(package: ReviewPackage) -> bool:
+    """Re-run declared business/formal checks instead of trusting a recomputed digest.
 
-    This verifies content integrity only. It does not authenticate an author and is
-    deliberately not presented as a digital signature. Unsupported package versions,
-    compiler/verifier identities, or unsafe governance/scope states are rejected even
-    if a caller recomputes a matching digest.
+    SHA-256 detects accidental or uncoordinated modification, but it is not an author
+    signature: a caller that changes protected fields can also recompute the fingerprint.
+    The review verifier therefore independently re-evaluates the exact policy against the
+    budgets recorded in provenance and requires the stored notes to match fresh verifier
+    output. Because the declared verifier identity is Z3-specific, absence of Z3 fails closed.
+    """
+    if not HAS_Z3 or not package.policy.verified:
+        return False
+    verified, current_notes = verify_policy(
+        package.policy,
+        max_fpr=package.provenance.max_false_positive_rate,
+        max_latency_ms=package.provenance.max_policy_latency_ms,
+    )
+    return verified and package.verification_notes == current_notes
+
+
+def verify_review_package(package: ReviewPackage) -> bool:
+    """Validate contract, protected-field integrity, and current semantic evidence.
+
+    The fingerprint is intentionally not treated as authentication. Even when a caller can
+    recompute SHA-256 after modifying an artifact, the exact policy must still pass the
+    declared Z3/business guardrails and reproduce the stored verification evidence.
     """
     if not _has_supported_review_contract(package):
         return False
@@ -189,4 +207,6 @@ def verify_review_package(package: ReviewPackage) -> bool:
         production_claim=package.production_claim,
     )
     expected = hashlib.sha256(canonical).hexdigest()
-    return hmac.compare_digest(expected, package.artifact_sha256)
+    if not hmac.compare_digest(expected, package.artifact_sha256):
+        return False
+    return _has_current_semantic_evidence(package)

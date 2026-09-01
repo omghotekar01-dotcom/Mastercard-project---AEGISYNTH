@@ -164,6 +164,40 @@ def test_review_package_rejects_unsafe_governance_even_with_recomputed_digest():
     assert verify_review_package(production_claim) is False
 
 
+def test_review_package_rejects_unsafe_policy_even_with_recomputed_digest():
+    package = build_review_package(AegisynthEngine(seed=42).run(generations=4))
+    tampered = package.model_copy(deep=True)
+    tampered.policy.false_positive_rate = 0.5
+    tampered.artifact_sha256 = _recompute_digest(tampered)
+
+    assert verify_review_package(tampered) is False
+
+
+def test_review_package_rejects_stale_evidence_even_with_recomputed_digest():
+    package = build_review_package(AegisynthEngine(seed=42).run(generations=4))
+    tampered = package.model_copy(deep=True)
+    tampered.verification_notes = [*tampered.verification_notes, "self-consistent but stale"]
+    tampered.artifact_sha256 = _recompute_digest(tampered)
+
+    assert verify_review_package(tampered) is False
+
+
+def test_review_package_rejects_unverified_policy_even_with_recomputed_digest():
+    package = build_review_package(AegisynthEngine(seed=42).run(generations=4))
+    tampered = package.model_copy(deep=True)
+    tampered.policy.verified = False
+    tampered.artifact_sha256 = _recompute_digest(tampered)
+
+    assert verify_review_package(tampered) is False
+
+
+def test_review_package_verification_fails_closed_without_z3(monkeypatch):
+    package = build_review_package(AegisynthEngine(seed=42).run(generations=4))
+    monkeypatch.setattr(artifact_module, "HAS_Z3", False)
+
+    assert verify_review_package(package) is False
+
+
 def test_review_package_requires_human_approval_and_starts_undeployed():
     package = build_review_package(AegisynthEngine(seed=42).run(generations=4))
 
