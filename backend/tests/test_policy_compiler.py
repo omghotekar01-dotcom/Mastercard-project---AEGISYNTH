@@ -102,6 +102,24 @@ def test_compiler_rejects_mislabeled_attack_population():
         DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=3)
 
 
+@pytest.mark.parametrize("population", ["benign", "attack"])
+def test_compiler_rejects_duplicate_transaction_ids_within_population(population):
+    benign, attacks = fixture_world()
+    rows = benign if population == "benign" else attacks
+    rows[1] = rows[1].model_copy(update={"tx_id": rows[0].tx_id})
+
+    with pytest.raises(ValueError, match=rf"{population} evaluation population contains duplicate tx_id"):
+        DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=3)
+
+
+def test_compiler_rejects_transaction_id_overlap_between_populations():
+    benign, attacks = fixture_world()
+    attacks[0] = attacks[0].model_copy(update={"tx_id": benign[0].tx_id})
+
+    with pytest.raises(ValueError, match="benign and attack evaluation populations share tx_id"):
+        DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=3)
+
+
 @pytest.mark.parametrize(
     "population,feature,value",
     [

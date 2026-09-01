@@ -59,15 +59,26 @@ def _validate_policy_features(tx: Transaction, population: str) -> None:
             )
 
 
+def _duplicate_tx_ids(rows: list[Transaction]) -> set[str]:
+    seen: set[str] = set()
+    duplicates: set[str] = set()
+    for tx in rows:
+        if tx.tx_id in seen:
+            duplicates.add(tx.tx_id)
+        seen.add(tx.tx_id)
+    return duplicates
+
+
 def _validate_evaluation_populations(
     benign: list[Transaction], attacks: list[Transaction]
 ) -> None:
-    """Fail closed when compiler evidence populations are absent, malformed, or mislabeled.
+    """Fail closed when compiler evidence populations are absent, malformed, or contaminated.
 
     FPR and coverage are only meaningful when evaluated against non-empty, correctly
-    labeled populations with finite policy-driving features. Refuse synthesis rather than
-    allowing denominator fallbacks, dataset inversion, or NaN comparison semantics to
-    create misleading safety evidence.
+    labeled populations with finite policy-driving features and independent transaction
+    identities. Refuse synthesis rather than allowing denominator fallbacks, dataset
+    inversion, duplicate weighting, cross-population contamination, or NaN comparison
+    semantics to create misleading safety evidence.
     """
     if not benign:
         raise ValueError("benign evaluation population must not be empty")
@@ -77,6 +88,23 @@ def _validate_evaluation_populations(
         raise ValueError("benign evaluation population must contain only label=0 transactions")
     if any(tx.label != 1 for tx in attacks):
         raise ValueError("attack evaluation population must contain only label=1 transactions")
+
+    duplicate_benign = _duplicate_tx_ids(benign)
+    if duplicate_benign:
+        raise ValueError(
+            f"benign evaluation population contains duplicate tx_id values: {sorted(duplicate_benign)!r}"
+        )
+    duplicate_attacks = _duplicate_tx_ids(attacks)
+    if duplicate_attacks:
+        raise ValueError(
+            f"attack evaluation population contains duplicate tx_id values: {sorted(duplicate_attacks)!r}"
+        )
+    overlapping_ids = {tx.tx_id for tx in benign} & {tx.tx_id for tx in attacks}
+    if overlapping_ids:
+        raise ValueError(
+            f"benign and attack evaluation populations share tx_id values: {sorted(overlapping_ids)!r}"
+        )
+
     for tx in benign:
         _validate_policy_features(tx, "benign")
     for tx in attacks:
