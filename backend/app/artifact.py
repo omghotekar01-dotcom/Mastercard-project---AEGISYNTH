@@ -90,6 +90,41 @@ def _canonical_payload(
     )
 
 
+def _validate_result_consistency(result: LabResult) -> None:
+    """Bind judge-facing summary claims to the exact final synthesis iteration.
+
+    A final policy can independently pass formal/business verification while surrounding
+    LabResult metrics are stale or internally inconsistent. Refuse packaging unless the
+    iteration history, final policy, and summary metrics describe the same run state.
+    """
+    if not result.iterations:
+        raise ValueError("Review package requires at least one synthesis iteration")
+
+    expected_iterations = list(range(1, len(result.iterations) + 1))
+    observed_iterations = [item.iteration for item in result.iterations]
+    if observed_iterations != expected_iterations:
+        raise ValueError("Review package iteration history must be contiguous and ordered")
+
+    final_iteration = result.iterations[-1]
+    if result.final_policy != final_iteration.candidate:
+        raise ValueError("Review package final policy does not match the final synthesis iteration")
+    if result.final_attack_success_rate != final_iteration.attack_success_rate:
+        raise ValueError("Review package final attack-success rate is inconsistent with the final iteration")
+
+    expected_metrics = {
+        "attack_success_reduction": round(
+            result.baseline_attack_success_rate - result.final_attack_success_rate, 4
+        ),
+        "final_fraud_coverage": result.final_policy.fraud_coverage,
+        "final_false_positive_rate": result.final_policy.false_positive_rate,
+        "estimated_policy_latency_ms": result.final_policy.estimated_latency_ms,
+        "benign_acceptance_rate": round(1 - result.final_policy.false_positive_rate, 4),
+    }
+    observed_metrics = result.metrics.model_dump(mode="python")
+    if observed_metrics != expected_metrics:
+        raise ValueError("Review package summary metrics are inconsistent with the final policy/run")
+
+
 def _validate_result_for_review(
     result: LabResult,
     max_fpr: float,
@@ -101,6 +136,8 @@ def _validate_result_for_review(
     Packaging therefore fails closed if Z3 is unavailable, if the final policy no longer
     satisfies those budgets, or if the stored verification evidence is stale/tampered.
     """
+    _validate_result_consistency(result)
+
     if not HAS_Z3:
         raise RuntimeError(
             "Review package requires Z3; refusing to claim z3-business-guardrails-v1 "
