@@ -10,7 +10,11 @@ from .verification import DEFAULT_MAX_POLICY_LATENCY_MS
 COMPILER_ID = "compact-grid-search-v1"
 VERIFIER_ID = "z3-business-guardrails-v1"
 DEFAULT_MAX_FPR = 0.02
-REVIEW_PACKAGE_VERSION = "1.1"
+REVIEW_PACKAGE_VERSION = "1.2"
+APPROVAL_STATUS = "HUMAN_APPROVAL_REQUIRED"
+DEPLOYMENT_STATUS = "NOT_DEPLOYED"
+SYNTHETIC_ONLY = True
+PRODUCTION_CLAIM = False
 
 
 def _canonical_fields(
@@ -20,8 +24,16 @@ def _canonical_fields(
     provenance: dict,
     policy: dict,
     verification_notes: list[str],
+    approval_status: str,
+    deployment_status: str,
+    synthetic_only: bool,
+    production_claim: bool,
 ) -> bytes:
-    """Return stable bytes for integrity fingerprinting of a review handoff."""
+    """Return stable bytes for integrity fingerprinting of a review handoff.
+
+    Governance and scope flags are part of the protected payload so changing approval,
+    deployment, synthetic-only, or production-claim state invalidates the fingerprint.
+    """
     payload = {
         "package_version": package_version,
         "attack_family": attack_family,
@@ -29,6 +41,10 @@ def _canonical_fields(
         "provenance": provenance,
         "policy": policy,
         "verification_notes": verification_notes,
+        "approval_status": approval_status,
+        "deployment_status": deployment_status,
+        "synthetic_only": synthetic_only,
+        "production_claim": production_claim,
     }
     return json.dumps(
         payload,
@@ -63,6 +79,10 @@ def _canonical_payload(
         provenance=provenance.model_dump(mode="json"),
         policy=result.final_policy.model_dump(mode="json"),
         verification_notes=result.verification_notes,
+        approval_status=APPROVAL_STATUS,
+        deployment_status=DEPLOYMENT_STATUS,
+        synthetic_only=SYNTHETIC_ONLY,
+        production_claim=PRODUCTION_CLAIM,
     )
 
 
@@ -74,8 +94,9 @@ def build_review_package(
     """Package a verified synthetic policy for explicit human approval.
 
     The SHA-256 digest is an integrity fingerprint, not a cryptographic signature.
-    It binds the policy to its compiler/verifier profile and declared safety budgets.
-    Deployment remains NOT_DEPLOYED until an external human-governance system acts.
+    It binds the policy, evidence, compiler/verifier profile, safety budgets, and
+    governance/scope state. Deployment remains NOT_DEPLOYED until an external
+    human-governance system acts.
     """
     provenance = _provenance(result, max_fpr=max_fpr, max_latency_ms=max_latency_ms)
     digest = hashlib.sha256(_canonical_payload(result, provenance)).hexdigest()
@@ -87,15 +108,15 @@ def build_review_package(
         provenance=provenance,
         policy=result.final_policy,
         verification_notes=result.verification_notes,
-        approval_status="HUMAN_APPROVAL_REQUIRED",
-        deployment_status="NOT_DEPLOYED",
-        synthetic_only=True,
-        production_claim=False,
+        approval_status=APPROVAL_STATUS,
+        deployment_status=DEPLOYMENT_STATUS,
+        synthetic_only=SYNTHETIC_ONLY,
+        production_claim=PRODUCTION_CLAIM,
     )
 
 
 def verify_review_package(package: ReviewPackage) -> bool:
-    """Detect modification of policy, evidence, provenance, or declared safety budgets.
+    """Detect modification of policy, evidence, provenance, governance, or scope.
 
     This verifies content integrity only. It does not authenticate an author and is
     deliberately not presented as a digital signature.
@@ -107,6 +128,10 @@ def verify_review_package(package: ReviewPackage) -> bool:
         provenance=package.provenance.model_dump(mode="json"),
         policy=package.policy.model_dump(mode="json"),
         verification_notes=package.verification_notes,
+        approval_status=package.approval_status,
+        deployment_status=package.deployment_status,
+        synthetic_only=package.synthetic_only,
+        production_claim=package.production_claim,
     )
     expected = hashlib.sha256(canonical).hexdigest()
     return hmac.compare_digest(expected, package.artifact_sha256)

@@ -27,7 +27,7 @@ def test_review_package_changes_when_policy_result_changes():
 def test_review_package_binds_compilation_provenance():
     package = build_review_package(AegisynthEngine(seed=42).run(generations=4))
 
-    assert package.package_version == "1.1"
+    assert package.package_version == "1.2"
     assert package.provenance.compiler_id == "compact-grid-search-v1"
     assert package.provenance.verifier_id == "z3-business-guardrails-v1"
     assert package.provenance.generation_count == 4
@@ -71,6 +71,26 @@ def test_review_package_detects_compiler_identity_tampering():
     assert verify_review_package(tampered) is False
 
 
+def test_review_package_detects_governance_and_scope_tampering():
+    package = build_review_package(AegisynthEngine(seed=42).run(generations=4))
+
+    approval_tampered = package.model_copy(deep=True)
+    approval_tampered.approval_status = "APPROVED"
+    assert verify_review_package(approval_tampered) is False
+
+    deployment_tampered = package.model_copy(deep=True)
+    deployment_tampered.deployment_status = "CANARY"
+    assert verify_review_package(deployment_tampered) is False
+
+    scope_tampered = package.model_copy(deep=True)
+    scope_tampered.synthetic_only = False
+    assert verify_review_package(scope_tampered) is False
+
+    claim_tampered = package.model_copy(deep=True)
+    claim_tampered.production_claim = True
+    assert verify_review_package(claim_tampered) is False
+
+
 def test_review_package_requires_human_approval_and_starts_undeployed():
     package = build_review_package(AegisynthEngine(seed=42).run(generations=4))
 
@@ -89,9 +109,11 @@ def test_review_package_endpoint_matches_benchmark_contract():
     assert response.status_code == 200
     payload = response.json()
     assert payload["seed"] == 42
-    assert payload["package_version"] == "1.1"
+    assert payload["package_version"] == "1.2"
     assert payload["approval_status"] == "HUMAN_APPROVAL_REQUIRED"
     assert payload["deployment_status"] == "NOT_DEPLOYED"
+    assert payload["synthetic_only"] is True
+    assert payload["production_claim"] is False
     assert payload["policy"]["verified"] is True
     assert payload["provenance"]["generation_count"] == 4
     assert payload["provenance"]["max_false_positive_rate"] == 0.02

@@ -91,7 +91,7 @@ class CompilationProvenance(BaseModel):
 class ReviewPackage(BaseModel):
     """Immutable review handoff generated after synthesis and verification."""
 
-    package_version: str = "1.1"
+    package_version: str = "1.2"
     artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     attack_family: str = Field(min_length=1, max_length=64)
     seed: int = Field(ge=0)
