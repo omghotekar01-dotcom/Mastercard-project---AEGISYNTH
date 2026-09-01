@@ -1,3 +1,5 @@
+import math
+
 import pytest
 from pydantic import ValidationError
 
@@ -76,6 +78,23 @@ def test_verifier_rejects_policy_above_latency_budget():
     ok, notes = verify_policy(policy)
     assert ok is False
     assert any("latency" in note.lower() and "exceeds" in note.lower() for note in notes)
+
+
+def test_verifier_fails_closed_on_invalid_business_budgets():
+    policy = AegisynthEngine(seed=42).run(generations=1).final_policy
+    invalid_configs = [
+        {"max_fpr": -0.01, "max_latency_ms": 5.0},
+        {"max_fpr": 1.01, "max_latency_ms": 5.0},
+        {"max_fpr": math.nan, "max_latency_ms": 5.0},
+        {"max_fpr": 0.02, "max_latency_ms": 0.0},
+        {"max_fpr": 0.02, "max_latency_ms": -1.0},
+        {"max_fpr": 0.02, "max_latency_ms": math.inf},
+    ]
+    for config in invalid_configs:
+        ok, notes = verify_policy(policy, **config)
+        assert ok is False
+        assert notes
+        assert "configuration invalid" in notes[0].lower()
 
 
 def test_compiler_output_satisfies_latency_budget():
