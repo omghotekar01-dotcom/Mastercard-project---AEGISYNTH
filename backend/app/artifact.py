@@ -115,12 +115,30 @@ def build_review_package(
     )
 
 
+def _has_supported_review_contract(package: ReviewPackage) -> bool:
+    """Fail closed unless the handoff matches the currently supported safe contract."""
+    return (
+        package.package_version == REVIEW_PACKAGE_VERSION
+        and package.provenance.compiler_id == COMPILER_ID
+        and package.provenance.verifier_id == VERIFIER_ID
+        and package.approval_status == APPROVAL_STATUS
+        and package.deployment_status == DEPLOYMENT_STATUS
+        and package.synthetic_only is SYNTHETIC_ONLY
+        and package.production_claim is PRODUCTION_CLAIM
+    )
+
+
 def verify_review_package(package: ReviewPackage) -> bool:
-    """Detect modification of policy, evidence, provenance, governance, or scope.
+    """Validate review-contract compatibility and detect protected-field modification.
 
     This verifies content integrity only. It does not authenticate an author and is
-    deliberately not presented as a digital signature.
+    deliberately not presented as a digital signature. Unsupported package versions,
+    compiler/verifier identities, or unsafe governance/scope states are rejected even
+    if a caller recomputes a matching digest.
     """
+    if not _has_supported_review_contract(package):
+        return False
+
     canonical = _canonical_fields(
         package_version=package.package_version,
         attack_family=package.attack_family,
