@@ -20,8 +20,14 @@ def _validate_budgets(max_fpr: float, max_latency_ms: float) -> tuple[bool, list
     Business guardrails are safety boundaries. Invalid budgets must fail closed rather than
     accidentally weakening verification through negative, non-finite, or out-of-range values.
     """
+    if isinstance(max_fpr, bool) or not isinstance(max_fpr, (int, float)):
+        return False, ["Verifier configuration invalid: max_fpr must be a real numeric value"]
     if not math.isfinite(max_fpr) or not 0 <= max_fpr <= 1:
         return False, ["Verifier configuration invalid: max_fpr must be finite and within [0, 1]"]
+    if isinstance(max_latency_ms, bool) or not isinstance(max_latency_ms, (int, float)):
+        return False, [
+            "Verifier configuration invalid: max_latency_ms must be a real numeric value"
+        ]
     if not math.isfinite(max_latency_ms) or max_latency_ms <= 0:
         return False, ["Verifier configuration invalid: max_latency_ms must be finite and > 0"]
     return True, []
