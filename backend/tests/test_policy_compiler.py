@@ -1,3 +1,5 @@
+import pytest
+
 from app.policy import DefenceCompiler, score_policy
 from app.schemas import Transaction
 
@@ -68,3 +70,9 @@ def test_empty_attack_set_does_not_create_fake_coverage():
     assert score.blocked_attacks == 0
     assert score.coverage == 0.0
     assert policy.fraud_coverage == 0.0
+
+
+@pytest.mark.parametrize("invalid_budget", [-0.01, 1.01, float("nan"), float("inf"), float("-inf")])
+def test_compiler_rejects_malformed_false_positive_budgets(invalid_budget):
+    with pytest.raises(ValueError, match=r"max_fpr must be finite and within \[0, 1\]"):
+        DefenceCompiler(max_fpr=invalid_budget)

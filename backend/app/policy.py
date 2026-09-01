@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 from dataclasses import dataclass
 from itertools import product
 from .schemas import Policy, Transaction
@@ -41,6 +42,8 @@ class DefenceCompiler:
     """Searches a compact policy space for the best safe generalization."""
 
     def __init__(self, max_fpr: float = 0.02):
+        if not math.isfinite(max_fpr) or not 0 <= max_fpr <= 1:
+            raise ValueError("max_fpr must be finite and within [0, 1]")
         self.max_fpr = max_fpr
 
     def synthesize(self, benign: list[Transaction], attacks: list[Transaction], generation: int) -> Policy:
