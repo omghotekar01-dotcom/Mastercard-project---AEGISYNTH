@@ -19,6 +19,8 @@ APPROVAL_STATUS = "HUMAN_APPROVAL_REQUIRED"
 DEPLOYMENT_STATUS = "NOT_DEPLOYED"
 SYNTHETIC_ONLY = True
 PRODUCTION_CLAIM = False
+_METRIC_PRECISION = 4
+_METRIC_ULP = 10 ** -_METRIC_PRECISION
 
 
 def _canonical_fields(
@@ -111,17 +113,26 @@ def _validate_result_consistency(result: LabResult) -> None:
     if result.final_attack_success_rate != final_iteration.attack_success_rate:
         raise ValueError("Review package final attack-success rate is inconsistent with the final iteration")
 
-    expected_metrics = {
-        "attack_success_reduction": round(
-            result.baseline_attack_success_rate - result.final_attack_success_rate, 4
-        ),
+    observed_metrics = result.metrics.model_dump(mode="python")
+    expected_reduction = round(
+        result.baseline_attack_success_rate - result.final_attack_success_rate,
+        _METRIC_PRECISION,
+    )
+    # baseline_attack_success_rate is itself serialized at four decimals while the engine
+    # computes the reduction from the pre-rounded baseline. Reconstructing from the public
+    # LabResult can therefore differ by at most one unit in the last reported decimal.
+    if abs(observed_metrics["attack_success_reduction"] - expected_reduction) > _METRIC_ULP:
+        raise ValueError("Review package summary metrics are inconsistent with the final policy/run")
+
+    expected_exact_metrics = {
         "final_fraud_coverage": result.final_policy.fraud_coverage,
         "final_false_positive_rate": result.final_policy.false_positive_rate,
         "estimated_policy_latency_ms": result.final_policy.estimated_latency_ms,
-        "benign_acceptance_rate": round(1 - result.final_policy.false_positive_rate, 4),
+        "benign_acceptance_rate": round(
+            1 - result.final_policy.false_positive_rate, _METRIC_PRECISION
+        ),
     }
-    observed_metrics = result.metrics.model_dump(mode="python")
-    if observed_metrics != expected_metrics:
+    if any(observed_metrics[name] != value for name, value in expected_exact_metrics.items()):
         raise ValueError("Review package summary metrics are inconsistent with the final policy/run")
 
 
