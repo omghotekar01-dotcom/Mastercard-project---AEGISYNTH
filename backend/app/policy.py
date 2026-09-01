@@ -39,14 +39,35 @@ def score_policy(policy: Policy, benign: list[Transaction], attacks: list[Transa
     )
 
 
+def _validate_policy_features(tx: Transaction, population: str) -> None:
+    """Validate policy-driving transaction features at the compiler trust boundary."""
+    bounds = {
+        "merchant_age_hours": (0.0, None),
+        "first_time_card_ratio": (0.0, 1.0),
+        "settlement_change_days": (0.0, None),
+        "temporal_burst_score": (0.0, 1.0),
+    }
+    for feature, (minimum, maximum) in bounds.items():
+        value = getattr(tx, feature)
+        if not isinstance(value, (int, float)) or not math.isfinite(value):
+            raise ValueError(f"{population} transaction {tx.tx_id!r} has non-finite {feature}")
+        if value < minimum or (maximum is not None and value > maximum):
+            upper = f", {maximum:g}" if maximum is not None else ""
+            raise ValueError(
+                f"{population} transaction {tx.tx_id!r} has out-of-range {feature}; "
+                f"expected [{minimum:g}{upper}]"
+            )
+
+
 def _validate_evaluation_populations(
     benign: list[Transaction], attacks: list[Transaction]
 ) -> None:
-    """Fail closed when compiler evidence populations are absent or mislabeled.
+    """Fail closed when compiler evidence populations are absent, malformed, or mislabeled.
 
     FPR and coverage are only meaningful when evaluated against non-empty, correctly
-    labeled populations. Refuse synthesis rather than allowing denominator fallbacks or
-    accidental dataset inversion to create misleading safety evidence.
+    labeled populations with finite policy-driving features. Refuse synthesis rather than
+    allowing denominator fallbacks, dataset inversion, or NaN comparison semantics to
+    create misleading safety evidence.
     """
     if not benign:
         raise ValueError("benign evaluation population must not be empty")
@@ -56,6 +77,10 @@ def _validate_evaluation_populations(
         raise ValueError("benign evaluation population must contain only label=0 transactions")
     if any(tx.label != 1 for tx in attacks):
         raise ValueError("attack evaluation population must contain only label=1 transactions")
+    for tx in benign:
+        _validate_policy_features(tx, "benign")
+    for tx in attacks:
+        _validate_policy_features(tx, "attack")
 
 
 class DefenceCompiler:
