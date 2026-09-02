@@ -58,7 +58,11 @@ class AegisynthEngine:
             ))
             final_policy = candidate
             verification_notes = notes
-            current_attacks = seed_attacks + harder + counterexamples
+            replayed_counterexamples = [
+                tx.model_copy(update={"tx_id": f"{tx.tx_id}-CE{generation:02d}"})
+                for tx in counterexamples
+            ]
+            current_attacks = seed_attacks + harder + replayed_counterexamples
 
         assert final_policy is not None
         final_asr = iterations[-1].attack_success_rate

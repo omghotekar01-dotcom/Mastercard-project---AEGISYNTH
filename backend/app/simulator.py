@@ -7,17 +7,20 @@ class PaymentWorld:
 
     def __init__(self, seed: int = 42):
         self.rng = random.Random(seed)
+        self._benign_seq = 0
+        self._attack_seq = 0
 
     def _clip(self, x: float, lo: float = 0.0, hi: float = 1.0) -> float:
         return max(lo, min(hi, x))
 
     def benign(self, n: int = 1200) -> list[Transaction]:
         rows: list[Transaction] = []
+        start = self._benign_seq
         for i in range(n):
             # Most benign merchants are mature; a minority are legitimate new/high-growth merchants.
             startup = self.rng.random() < 0.055
             rows.append(Transaction(
-                tx_id=f"B-{i:06d}",
+                tx_id=f"B-{start + i:06d}",
                 amount=max(20, self.rng.lognormvariate(6.0 if not startup else 6.5, 0.7)),
                 merchant_age_hours=max(1, self.rng.gauss(24 * (420 if not startup else 5.5), 24 * (260 if not startup else 3.5))),
                 first_time_card_ratio=self._clip(self.rng.betavariate(2.0, 6.0) if not startup else self.rng.betavariate(4.0, 3.3)),
@@ -27,15 +30,17 @@ class PaymentWorld:
                 geo_velocity=max(0, self.rng.gauss(10, 15)),
                 label=0,
             ))
+        self._benign_seq += len(rows)
         return rows
 
     def attack(self, n: int = 500, family: str = "ghost_merchant_swarm", hardness: float = 0.0) -> list[Transaction]:
         """Generate a safe, fictional attack family. Hardness mutates values toward benign ranges."""
         h = self._clip(hardness)
         rows: list[Transaction] = []
+        start = self._attack_seq
         for i in range(n):
             rows.append(Transaction(
-                tx_id=f"A-{i:06d}",
+                tx_id=f"A-{start + i:06d}",
                 amount=max(50, self.rng.lognormvariate(7.4 - 0.25*h, 0.55)),
                 merchant_age_hours=max(1, self.rng.gauss(42 + 70*h, 20 + 25*h)),
                 first_time_card_ratio=self._clip(self.rng.gauss(0.86 - 0.23*h, 0.08 + 0.02*h)),
@@ -46,6 +51,7 @@ class PaymentWorld:
                 label=1,
                 attack_family=family,
             ))
+        self._attack_seq += len(rows)
         return rows
 
     def calibration_set(self, benign_n: int = 1200, attack_n: int = 500, hardness: float = 0.0):

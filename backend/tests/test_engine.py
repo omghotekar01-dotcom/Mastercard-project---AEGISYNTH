@@ -1,4 +1,5 @@
 from app.engine import AegisynthEngine
+from app.simulator import PaymentWorld
 from app.verification import verify_policy
 
 
@@ -36,3 +37,19 @@ def test_counterexample_trace_is_consistent_and_deterministic():
         assert trace.escaped_rate == iteration.attack_success_rate
         assert len(trace.sample_tx_ids) <= 5
         assert all(tx_id.startswith("A-") for tx_id in trace.sample_tx_ids)
+
+
+def test_payment_world_assigns_unique_ids_across_repeated_batches():
+    world = PaymentWorld(seed=42)
+    benign_a = world.benign(3)
+    benign_b = world.benign(2)
+    attack_a = world.attack(3)
+    attack_b = world.attack(2, hardness=0.2)
+
+    benign_ids = [tx.tx_id for tx in benign_a + benign_b]
+    attack_ids = [tx.tx_id for tx in attack_a + attack_b]
+
+    assert benign_ids == ["B-000000", "B-000001", "B-000002", "B-000003", "B-000004"]
+    assert attack_ids == ["A-000000", "A-000001", "A-000002", "A-000003", "A-000004"]
+    assert len(benign_ids) == len(set(benign_ids))
+    assert len(attack_ids) == len(set(attack_ids))
