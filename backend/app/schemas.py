@@ -79,17 +79,17 @@ class Policy(BaseModel):
 class CounterexampleTrace(BaseModel):
     """Audit-friendly summary of escaped synthetic variants for one generation."""
 
-    training_attack_count: int = Field(ge=1)
-    redteam_attack_count: int = Field(ge=1)
-    escaped_count: int = Field(ge=0)
+    training_attack_count: int = Field(ge=1, strict=True)
+    redteam_attack_count: int = Field(ge=1, strict=True)
+    escaped_count: int = Field(ge=0, strict=True)
     escaped_rate: float = Field(ge=0, le=1)
     sample_tx_ids: list[str] = Field(default_factory=list, max_length=5)
 
 
 class IterationResult(BaseModel):
-    iteration: int = Field(ge=1)
+    iteration: int = Field(ge=1, strict=True)
     candidate: Policy
-    counterexamples: int = Field(ge=0)
+    counterexamples: int = Field(ge=0, strict=True)
     attack_success_rate: float = Field(ge=0, le=1)
     trace: CounterexampleTrace
 
@@ -104,7 +104,7 @@ class LabMetrics(BaseModel):
 
 class LabResult(BaseModel):
     attack_family: str = Field(min_length=1, max_length=64)
-    seed: int = Field(ge=0)
+    seed: int = Field(ge=0, strict=True)
     baseline_attack_success_rate: float = Field(ge=0, le=1)
     final_attack_success_rate: float = Field(ge=0, le=1)
     iterations: list[IterationResult]
@@ -118,7 +118,7 @@ class CompilationProvenance(BaseModel):
 
     compiler_id: str = Field(min_length=1, max_length=80)
     verifier_id: str = Field(min_length=1, max_length=80)
-    generation_count: int = Field(ge=1, le=8)
+    generation_count: int = Field(ge=1, le=8, strict=True)
     max_false_positive_rate: float = Field(ge=0, le=1)
     max_policy_latency_ms: float = Field(gt=0)
 
@@ -129,7 +129,7 @@ class ReviewPackage(BaseModel):
     package_version: str = "1.2"
     artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     attack_family: str = Field(min_length=1, max_length=64)
-    seed: int = Field(ge=0)
+    seed: int = Field(ge=0, strict=True)
     provenance: CompilationProvenance
     policy: Policy
     verification_notes: list[str]
