@@ -61,6 +61,9 @@ def test_review_package_binds_compilation_provenance():
 def test_review_package_reverifies_policy_under_declared_budgets():
     result = AegisynthEngine(seed=42).run(generations=4)
     result.final_policy.false_positive_rate = 0.5
+    result.metrics = result.metrics.model_copy(
+        update={"final_false_positive_rate": 0.5, "benign_acceptance_rate": 0.5}
+    )
 
     with pytest.raises(ValueError, match="verified final policy"):
         build_review_package(result)
