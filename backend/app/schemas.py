@@ -85,6 +85,11 @@ class CounterexampleTrace(BaseModel):
     escaped_rate: float = Field(ge=0, le=1)
     sample_tx_ids: list[str] = Field(default_factory=list, max_length=5)
 
+    @field_validator("escaped_rate", mode="before")
+    @classmethod
+    def reject_boolean_escaped_rate(cls, value: object) -> object:
+        return _reject_boolean_numeric_input(value)
+
 
 class IterationResult(BaseModel):
     iteration: int = Field(ge=1, strict=True)
@@ -93,6 +98,11 @@ class IterationResult(BaseModel):
     attack_success_rate: float = Field(ge=0, le=1)
     trace: CounterexampleTrace
 
+    @field_validator("attack_success_rate", mode="before")
+    @classmethod
+    def reject_boolean_attack_success_rate(cls, value: object) -> object:
+        return _reject_boolean_numeric_input(value)
+
 
 class LabMetrics(BaseModel):
     attack_success_reduction: float = Field(ge=-1, le=1)
@@ -100,6 +110,18 @@ class LabMetrics(BaseModel):
     final_false_positive_rate: float = Field(ge=0, le=1)
     estimated_policy_latency_ms: float = Field(ge=0)
     benign_acceptance_rate: float = Field(ge=0, le=1)
+
+    @field_validator(
+        "attack_success_reduction",
+        "final_fraud_coverage",
+        "final_false_positive_rate",
+        "estimated_policy_latency_ms",
+        "benign_acceptance_rate",
+        mode="before",
+    )
+    @classmethod
+    def reject_boolean_metric_fields(cls, value: object) -> object:
+        return _reject_boolean_numeric_input(value)
 
 
 class LabResult(BaseModel):
@@ -112,6 +134,15 @@ class LabResult(BaseModel):
     verification_notes: list[str]
     metrics: LabMetrics
 
+    @field_validator(
+        "baseline_attack_success_rate",
+        "final_attack_success_rate",
+        mode="before",
+    )
+    @classmethod
+    def reject_boolean_result_rates(cls, value: object) -> object:
+        return _reject_boolean_numeric_input(value)
+
 
 class CompilationProvenance(BaseModel):
     """Deterministic metadata describing how a review artifact was produced."""
@@ -121,6 +152,15 @@ class CompilationProvenance(BaseModel):
     generation_count: int = Field(ge=1, le=8, strict=True)
     max_false_positive_rate: float = Field(ge=0, le=1)
     max_policy_latency_ms: float = Field(gt=0)
+
+    @field_validator(
+        "max_false_positive_rate",
+        "max_policy_latency_ms",
+        mode="before",
+    )
+    @classmethod
+    def reject_boolean_budget_fields(cls, value: object) -> object:
+        return _reject_boolean_numeric_input(value)
 
 
 class ReviewPackage(BaseModel):
