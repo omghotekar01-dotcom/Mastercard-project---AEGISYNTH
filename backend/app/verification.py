@@ -91,20 +91,25 @@ def verify_policy(
     if not HAS_Z3:
         return False, ["Formal verification unavailable: z3-solver is required"]
 
-    age = Real("age")
-    card = Real("card")
-    settle = Real("settle")
-    burst = Real("burst")
-    solver = Solver()
-    solver.add(And(age >= 0, age <= 24 * 365 * 20))
-    solver.add(And(card >= 0, card <= 1))
-    solver.add(And(settle >= 0, settle <= 3650))
-    solver.add(And(burst >= 0, burst <= 1))
-    solver.add(age <= policy.merchant_age_max)
-    solver.add(card >= policy.first_time_card_ratio_min)
-    solver.add(settle <= policy.settlement_change_days_max)
-    solver.add(burst >= policy.temporal_burst_score_min)
-    if solver.check() != sat:
+    try:
+        age = Real("age")
+        card = Real("card")
+        settle = Real("settle")
+        burst = Real("burst")
+        solver = Solver()
+        solver.add(And(age >= 0, age <= 24 * 365 * 20))
+        solver.add(And(card >= 0, card <= 1))
+        solver.add(And(settle >= 0, settle <= 3650))
+        solver.add(And(burst >= 0, burst <= 1))
+        solver.add(age <= policy.merchant_age_max)
+        solver.add(card >= policy.first_time_card_ratio_min)
+        solver.add(settle <= policy.settlement_change_days_max)
+        solver.add(burst >= policy.temporal_burst_score_min)
+        solver_result = solver.check()
+    except Exception:
+        return False, ["Formal verification failed closed: Z3 runtime error"]
+
+    if solver_result != sat:
         return False, ["Policy conditions are unsatisfiable"]
     formal_note = "Z3: policy is satisfiable over valid payment-feature domains."
 
