@@ -169,6 +169,19 @@ def test_verifier_rechecks_policy_domains_when_schema_validation_is_bypassed():
     assert "temporal_burst_score_min" in notes[0]
 
 
+def test_verifier_rejects_missing_policy_identity_when_schema_is_bypassed():
+    base = AegisynthEngine(seed=42).run(generations=1).final_policy
+    for bad_policy_id in ("", "   ", None, 123):
+        payload = base.model_dump()
+        payload["policy_id"] = bad_policy_id
+        policy = Policy.model_construct(**payload)
+
+        ok, notes = verify_policy(policy)
+
+        assert ok is False
+        assert notes == ["Policy identity invalid: policy_id must be a non-empty string"]
+
+
 def test_verifier_fails_closed_when_z3_is_unavailable(monkeypatch):
     policy = AegisynthEngine(seed=42).run(generations=1).final_policy
     monkeypatch.setattr(verification, "HAS_Z3", False)
