@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.policy import DefenceCompiler
-from app.schemas import Transaction
+from app.schemas import Policy, Transaction
 
 
 def _tx(tx_id: str, *, label: int) -> Transaction:
@@ -20,6 +20,20 @@ def _tx(tx_id: str, *, label: int) -> Transaction:
     )
 
 
+def _policy() -> Policy:
+    return Policy(
+        policy_id="ZD-01-048-50-07-50",
+        merchant_age_max=48.0,
+        first_time_card_ratio_min=0.50,
+        settlement_change_days_max=7.0,
+        temporal_burst_score_min=0.50,
+        action="STEP_UP",
+        fraud_coverage=0.90,
+        false_positive_rate=0.01,
+        estimated_latency_ms=0.35,
+    )
+
+
 def _populations() -> tuple[list[Transaction], list[Transaction]]:
     return [_tx("B-1", label=0)], [_tx("A-1", label=1)]
 
@@ -31,6 +45,46 @@ def test_transaction_schema_rejects_boolean_labels_before_compiler_boundary(bad_
 
     with pytest.raises(ValidationError, match=r"label"):
         Transaction(**payload)
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "amount",
+        "merchant_age_hours",
+        "first_time_card_ratio",
+        "settlement_change_days",
+        "temporal_burst_score",
+        "device_entropy",
+        "geo_velocity",
+    ],
+)
+def test_transaction_schema_rejects_boolean_numeric_features(field):
+    payload = _tx("SCHEMA-NUMERIC", label=0).model_dump()
+    payload[field] = True
+
+    with pytest.raises(ValidationError, match=field):
+        Transaction(**payload)
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "merchant_age_max",
+        "first_time_card_ratio_min",
+        "settlement_change_days_max",
+        "temporal_burst_score_min",
+        "fraud_coverage",
+        "false_positive_rate",
+        "estimated_latency_ms",
+    ],
+)
+def test_policy_schema_rejects_boolean_numeric_fields(field):
+    payload = _policy().model_dump()
+    payload[field] = False
+
+    with pytest.raises(ValidationError, match=field):
+        Policy(**payload)
 
 
 @pytest.mark.parametrize(
