@@ -3,6 +3,7 @@ import math
 import pytest
 from pydantic import ValidationError
 
+import app.verification as verification
 from app.engine import AegisynthEngine
 from app.policy import DefenceCompiler, matches
 from app.schemas import Policy
@@ -166,6 +167,16 @@ def test_verifier_rechecks_policy_domains_when_schema_validation_is_bypassed():
     ok, notes = verify_policy(policy)
     assert ok is False
     assert "temporal_burst_score_min" in notes[0]
+
+
+def test_verifier_fails_closed_when_z3_is_unavailable(monkeypatch):
+    policy = AegisynthEngine(seed=42).run(generations=1).final_policy
+    monkeypatch.setattr(verification, "HAS_Z3", False)
+
+    ok, notes = verification.verify_policy(policy)
+
+    assert ok is False
+    assert notes == ["Formal verification unavailable: z3-solver is required"]
 
 
 def test_compiler_output_satisfies_latency_budget():

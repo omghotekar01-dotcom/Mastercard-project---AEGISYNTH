@@ -5,7 +5,7 @@ import math
 try:
     from z3 import And, Real, Solver, sat
     HAS_Z3 = True
-except ImportError:  # local/offline fallback; production requirements install z3-solver
+except ImportError:  # production requirements install z3-solver; verification fails closed without it
     HAS_Z3 = False
 
 from .schemas import Policy
@@ -88,33 +88,25 @@ def verify_policy(
             f"the configured {max_latency_ms:.2f} ms budget"
         ]
 
-    if HAS_Z3:
-        age = Real("age")
-        card = Real("card")
-        settle = Real("settle")
-        burst = Real("burst")
-        solver = Solver()
-        solver.add(And(age >= 0, age <= 24 * 365 * 20))
-        solver.add(And(card >= 0, card <= 1))
-        solver.add(And(settle >= 0, settle <= 3650))
-        solver.add(And(burst >= 0, burst <= 1))
-        solver.add(age <= policy.merchant_age_max)
-        solver.add(card >= policy.first_time_card_ratio_min)
-        solver.add(settle <= policy.settlement_change_days_max)
-        solver.add(burst >= policy.temporal_burst_score_min)
-        if solver.check() != sat:
-            return False, ["Policy conditions are unsatisfiable"]
-        formal_note = "Z3: policy is satisfiable over valid payment-feature domains."
-    else:
-        satisfiable = (
-            policy.merchant_age_max >= 0
-            and 0 <= policy.first_time_card_ratio_min <= 1
-            and policy.settlement_change_days_max >= 0
-            and 0 <= policy.temporal_burst_score_min <= 1
-        )
-        if not satisfiable:
-            return False, ["Policy conditions are outside valid domains"]
-        formal_note = "Offline verifier: domain constraints satisfied (Z3 used when installed)."
+    if not HAS_Z3:
+        return False, ["Formal verification unavailable: z3-solver is required"]
+
+    age = Real("age")
+    card = Real("card")
+    settle = Real("settle")
+    burst = Real("burst")
+    solver = Solver()
+    solver.add(And(age >= 0, age <= 24 * 365 * 20))
+    solver.add(And(card >= 0, card <= 1))
+    solver.add(And(settle >= 0, settle <= 3650))
+    solver.add(And(burst >= 0, burst <= 1))
+    solver.add(age <= policy.merchant_age_max)
+    solver.add(card >= policy.first_time_card_ratio_min)
+    solver.add(settle <= policy.settlement_change_days_max)
+    solver.add(burst >= policy.temporal_burst_score_min)
+    if solver.check() != sat:
+        return False, ["Policy conditions are unsatisfiable"]
+    formal_note = "Z3: policy is satisfiable over valid payment-feature domains."
 
     notes.extend(
         [
