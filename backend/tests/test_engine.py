@@ -60,3 +60,9 @@ def test_payment_world_assigns_unique_ids_across_repeated_batches():
 def test_baseline_attack_success_rejects_empty_population():
     with pytest.raises(ValueError, match="baseline attack population must not be empty"):
         AegisynthEngine._baseline_attack_success([])
+
+
+@pytest.mark.parametrize("generations", [0, 9, True, 2.0, "4", None])
+def test_engine_rejects_unsupported_generation_counts(generations):
+    with pytest.raises(ValueError, match=r"generations must be an integer within \[1, 8\]"):
+        AegisynthEngine(seed=42).run(generations=generations)

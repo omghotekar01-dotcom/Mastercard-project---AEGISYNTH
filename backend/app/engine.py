@@ -20,7 +20,15 @@ class AegisynthEngine:
         )
         return 1 - caught / len(attacks)
 
+    @staticmethod
+    def _validate_generations(generations: object) -> int:
+        """Keep direct engine runs inside the supported, review-package-safe generation domain."""
+        if type(generations) is not int or not 1 <= generations <= 8:
+            raise ValueError("generations must be an integer within [1, 8]")
+        return generations
+
     def run(self, generations: int = 4, attack_family: str = "ghost_merchant_swarm") -> LabResult:
+        generations = self._validate_generations(generations)
         world = PaymentWorld(self.seed)
         compiler = DefenceCompiler(self.max_fpr)
         benign = world.benign(1400)
