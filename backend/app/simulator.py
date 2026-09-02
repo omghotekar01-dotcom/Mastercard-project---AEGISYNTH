@@ -6,6 +6,8 @@ class PaymentWorld:
     """Deterministic synthetic payment world; no real cardholder or merchant data is used."""
 
     def __init__(self, seed: int = 42):
+        if type(seed) is not int:
+            raise ValueError("seed must be an integer")
         self.rng = random.Random(seed)
         self._benign_seq = 0
         self._attack_seq = 0
