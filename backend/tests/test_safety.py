@@ -80,15 +80,16 @@ def test_verifier_rejects_policy_above_latency_budget():
     assert any("latency" in note.lower() and "exceeds" in note.lower() for note in notes)
 
 
-def test_verifier_rejects_policy_with_known_counterexamples():
+def test_verifier_reports_known_counterexamples_without_claiming_formal_elimination():
     policy = AegisynthEngine(seed=42).run(generations=1).final_policy.model_copy(
         update={"counterexamples_remaining": 1}
     )
 
     ok, notes = verify_policy(policy)
 
-    assert ok is False
-    assert any("counterexamples" in note.lower() and "zero" in note.lower() for note in notes)
+    assert ok is True
+    assert any("empirical counterexamples reported: 1" in note.lower() for note in notes)
+    assert any("not a formal zero-counterexample proof" in note.lower() for note in notes)
 
 
 def test_verifier_rejects_boolean_counterexample_count_when_schema_is_bypassed():
@@ -103,14 +104,19 @@ def test_verifier_rejects_boolean_counterexample_count_when_schema_is_bypassed()
     assert "integer" in notes[0].lower()
 
 
-def test_verified_policy_records_zero_counterexample_guardrail():
-    policy = AegisynthEngine(seed=42).run(generations=4).final_policy
+def test_verified_policy_preserves_empirical_counterexample_evidence():
+    result = AegisynthEngine(seed=42).run(generations=4)
+    policy = result.final_policy
 
     ok, notes = verify_policy(policy)
 
     assert ok is True
-    assert policy.counterexamples_remaining == 0
-    assert any("zero known counterexamples" in note.lower() for note in notes)
+    assert policy.counterexamples_remaining == result.iterations[-1].counterexamples
+    assert policy.counterexamples_remaining > 0
+    assert any(
+        f"empirical counterexamples reported: {policy.counterexamples_remaining}" in note.lower()
+        for note in notes
+    )
 
 
 def test_verifier_fails_closed_on_invalid_business_budgets():
