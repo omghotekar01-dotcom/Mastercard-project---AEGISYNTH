@@ -2,11 +2,18 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 Action = Literal["PASS", "STEP_UP", "REVIEW"]
 ApprovalStatus = Literal["HUMAN_APPROVAL_REQUIRED", "APPROVED", "REJECTED"]
 DeploymentStatus = Literal["NOT_DEPLOYED", "CANARY", "ROLLED_BACK"]
+
+
+def _reject_boolean_numeric_input(value: object) -> object:
+    """Prevent bool-as-number coercion at safety-critical schema boundaries."""
+    if isinstance(value, bool):
+        raise ValueError("boolean values are not valid numeric evidence")
+    return value
 
 
 class Transaction(BaseModel):
@@ -22,6 +29,20 @@ class Transaction(BaseModel):
     geo_velocity: float = Field(ge=0)
     label: int = Field(ge=0, le=1, strict=True)
     attack_family: str = Field(default="benign", min_length=1, max_length=64)
+
+    @field_validator(
+        "amount",
+        "merchant_age_hours",
+        "first_time_card_ratio",
+        "settlement_change_days",
+        "temporal_burst_score",
+        "device_entropy",
+        "geo_velocity",
+        mode="before",
+    )
+    @classmethod
+    def reject_boolean_numeric_features(cls, value: object) -> object:
+        return _reject_boolean_numeric_input(value)
 
 
 class Policy(BaseModel):
@@ -39,6 +60,20 @@ class Policy(BaseModel):
     counterexamples_remaining: int = Field(default=0, ge=0)
     verified: bool = False
     explanation: str = Field(default="", max_length=1000)
+
+    @field_validator(
+        "merchant_age_max",
+        "first_time_card_ratio_min",
+        "settlement_change_days_max",
+        "temporal_burst_score_min",
+        "fraud_coverage",
+        "false_positive_rate",
+        "estimated_latency_ms",
+        mode="before",
+    )
+    @classmethod
+    def reject_boolean_numeric_fields(cls, value: object) -> object:
+        return _reject_boolean_numeric_input(value)
 
 
 class CounterexampleTrace(BaseModel):
