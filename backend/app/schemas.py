@@ -175,5 +175,5 @@ class ReviewPackage(BaseModel):
     verification_notes: list[str]
     approval_status: ApprovalStatus = "HUMAN_APPROVAL_REQUIRED"
     deployment_status: DeploymentStatus = "NOT_DEPLOYED"
-    synthetic_only: bool = True
-    production_claim: bool = False
+    synthetic_only: Literal[True] = True
+    production_claim: Literal[False] = False
