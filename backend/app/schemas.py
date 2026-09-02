@@ -57,7 +57,7 @@ class Policy(BaseModel):
     fraud_coverage: float = Field(default=0.0, ge=0, le=1)
     false_positive_rate: float = Field(default=0.0, ge=0, le=1)
     estimated_latency_ms: float = Field(default=0.0, ge=0)
-    counterexamples_remaining: int = Field(default=0, ge=0)
+    counterexamples_remaining: int = Field(default=0, ge=0, strict=True)
     verified: bool = False
     explanation: str = Field(default="", max_length=1000)
 

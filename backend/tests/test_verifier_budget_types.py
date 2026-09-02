@@ -1,4 +1,8 @@
+import pytest
+from pydantic import ValidationError
+
 from app.engine import AegisynthEngine
+from app.schemas import Policy
 from app.verification import verify_policy
 
 
@@ -37,3 +41,12 @@ def test_verifier_rejects_schema_bypassed_policy_numeric_types():
         assert notes
         assert "policy numeric field invalid" in notes[0].lower()
         assert "numeric value" in notes[0].lower()
+
+
+def test_policy_rejects_boolean_counterexample_count_at_schema_boundary():
+    payload = AegisynthEngine(seed=42).run(generations=1).final_policy.model_dump()
+
+    for value in (False, True):
+        payload["counterexamples_remaining"] = value
+        with pytest.raises(ValidationError):
+            Policy.model_validate(payload)
