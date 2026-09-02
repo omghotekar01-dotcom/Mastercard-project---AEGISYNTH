@@ -76,6 +76,16 @@ def _validate_policy_features(tx: Transaction, population: str) -> None:
             )
 
 
+def _validate_evidence_metadata(tx: Transaction, population: str, expected_label: int) -> None:
+    """Reject schema-bypassed identity or label values before set/equality semantics can mask them."""
+    if not isinstance(tx.tx_id, str) or not tx.tx_id.strip():
+        raise ValueError(f"{population} evaluation transaction must have a non-empty string tx_id")
+    if type(tx.label) is not int or tx.label != expected_label:
+        raise ValueError(
+            f"{population} evaluation population must contain only label={expected_label} integer transactions"
+        )
+
+
 def _duplicate_tx_ids(rows: list[Transaction]) -> set[str]:
     seen: set[str] = set()
     duplicates: set[str] = set()
@@ -101,10 +111,11 @@ def _validate_evaluation_populations(
         raise ValueError("benign evaluation population must not be empty")
     if not attacks:
         raise ValueError("attack evaluation population must not be empty")
-    if any(tx.label != 0 for tx in benign):
-        raise ValueError("benign evaluation population must contain only label=0 transactions")
-    if any(tx.label != 1 for tx in attacks):
-        raise ValueError("attack evaluation population must contain only label=1 transactions")
+
+    for tx in benign:
+        _validate_evidence_metadata(tx, "benign", 0)
+    for tx in attacks:
+        _validate_evidence_metadata(tx, "attack", 1)
 
     duplicate_benign = _duplicate_tx_ids(benign)
     if duplicate_benign:
