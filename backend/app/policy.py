@@ -29,11 +29,21 @@ def matches(policy: Policy, tx: Transaction) -> bool:
 
 
 def score_policy(policy: Policy, benign: list[Transaction], attacks: list[Transaction]) -> Score:
+    """Score a policy only when both evidence populations are present.
+
+    A missing denominator is invalid evaluation evidence, not a meaningful zero rate.
+    Fail closed instead of manufacturing coverage/FPR values from empty datasets.
+    """
+    if not benign:
+        raise ValueError("benign scoring population must not be empty")
+    if not attacks:
+        raise ValueError("attack scoring population must not be empty")
+
     blocked = sum(matches(policy, tx) for tx in attacks)
     benign_hits = sum(matches(policy, tx) for tx in benign)
     return Score(
-        coverage=blocked / max(1, len(attacks)),
-        fpr=benign_hits / max(1, len(benign)),
+        coverage=blocked / len(attacks),
+        fpr=benign_hits / len(benign),
         blocked_attacks=blocked,
         benign_hits=benign_hits,
     )
