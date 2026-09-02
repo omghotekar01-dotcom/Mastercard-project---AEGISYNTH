@@ -55,11 +55,11 @@ def _is_real_number(value: object) -> bool:
 
 
 def _validate_policy_features(tx: Transaction, population: str) -> None:
-    """Validate policy-driving transaction features at the compiler trust boundary."""
+    """Validate policy-driving evidence against the same domains used by formal verification."""
     bounds = {
-        "merchant_age_hours": (0.0, None),
+        "merchant_age_hours": (0.0, float(24 * 365 * 20)),
         "first_time_card_ratio": (0.0, 1.0),
-        "settlement_change_days": (0.0, None),
+        "settlement_change_days": (0.0, 3650.0),
         "temporal_burst_score": (0.0, 1.0),
     }
     for feature, (minimum, maximum) in bounds.items():
@@ -68,11 +68,10 @@ def _validate_policy_features(tx: Transaction, population: str) -> None:
             raise ValueError(f"{population} transaction {tx.tx_id!r} has non-numeric {feature}")
         if not math.isfinite(value):
             raise ValueError(f"{population} transaction {tx.tx_id!r} has non-finite {feature}")
-        if value < minimum or (maximum is not None and value > maximum):
-            upper = f", {maximum:g}" if maximum is not None else ""
+        if value < minimum or value > maximum:
             raise ValueError(
                 f"{population} transaction {tx.tx_id!r} has out-of-range {feature}; "
-                f"expected [{minimum:g}{upper}]"
+                f"expected [{minimum:g}, {maximum:g}]"
             )
 
 
