@@ -31,6 +31,13 @@ def _validate_budgets(max_fpr: float, max_latency_ms: float) -> tuple[bool, list
     return True, []
 
 
+def _validate_policy_identity(policy: Policy) -> tuple[bool, list[str]]:
+    """Require a durable policy identity at the verification trust boundary."""
+    if not isinstance(policy.policy_id, str) or not policy.policy_id.strip():
+        return False, ["Policy identity invalid: policy_id must be a non-empty string"]
+    return True, []
+
+
 def _validate_policy_numeric_fields(policy: Policy) -> tuple[bool, list[str]]:
     """Fail closed if schema-bypassed policy numerics are malformed."""
     bounded_fields = {
@@ -70,6 +77,10 @@ def verify_policy(
     budgets_ok, budget_notes = _validate_budgets(max_fpr, max_latency_ms)
     if not budgets_ok:
         return False, budget_notes
+
+    identity_ok, identity_notes = _validate_policy_identity(policy)
+    if not identity_ok:
+        return False, identity_notes
 
     policy_numbers_ok, policy_number_notes = _validate_policy_numeric_fields(policy)
     if not policy_numbers_ok:
