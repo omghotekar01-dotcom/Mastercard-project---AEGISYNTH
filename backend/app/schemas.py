@@ -20,7 +20,7 @@ class Transaction(BaseModel):
     temporal_burst_score: float = Field(ge=0, le=1)
     device_entropy: float = Field(ge=0, le=1)
     geo_velocity: float = Field(ge=0)
-    label: int = Field(ge=0, le=1)
+    label: int = Field(ge=0, le=1, strict=True)
     attack_family: str = Field(default="benign", min_length=1, max_length=64)
 
 

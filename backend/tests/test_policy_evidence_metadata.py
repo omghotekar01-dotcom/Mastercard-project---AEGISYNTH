@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from app.policy import DefenceCompiler
 from app.schemas import Transaction
@@ -21,6 +22,15 @@ def _tx(tx_id: str, *, label: int) -> Transaction:
 
 def _populations() -> tuple[list[Transaction], list[Transaction]]:
     return [_tx("B-1", label=0)], [_tx("A-1", label=1)]
+
+
+@pytest.mark.parametrize("bad_label", [False, True])
+def test_transaction_schema_rejects_boolean_labels_before_compiler_boundary(bad_label):
+    payload = _tx("SCHEMA-BASE", label=0).model_dump()
+    payload["label"] = bad_label
+
+    with pytest.raises(ValidationError, match=r"label"):
+        Transaction(**payload)
 
 
 @pytest.mark.parametrize(
