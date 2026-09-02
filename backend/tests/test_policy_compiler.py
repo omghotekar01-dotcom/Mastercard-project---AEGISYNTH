@@ -1,6 +1,6 @@
 import pytest
 
-from app.policy import DefenceCompiler, score_policy
+from app.policy import DefenceCompiler, _policy_id, score_policy
 from app.schemas import Transaction
 
 
@@ -200,3 +200,17 @@ def test_compiler_accepts_zero_generation_with_stable_policy_identity():
     policy = DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=0)
 
     assert policy.policy_id.startswith("ZD-00-")
+
+
+def test_policy_identity_changes_when_any_semantic_threshold_changes():
+    baseline = _policy_id(3, 96, 0.64, 14, 0.64)
+
+    variants = {
+        _policy_id(3, 120, 0.64, 14, 0.64),
+        _policy_id(3, 96, 0.70, 14, 0.64),
+        _policy_id(3, 96, 0.64, 21, 0.64),
+        _policy_id(3, 96, 0.64, 14, 0.70),
+    }
+
+    assert baseline not in variants
+    assert len(variants) == 4

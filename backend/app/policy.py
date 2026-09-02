@@ -118,6 +118,14 @@ def _validate_evaluation_populations(
         _validate_policy_features(tx, "attack")
 
 
+def _policy_id(generation: int, age: int, card: float, settle: int, burst: float) -> str:
+    """Return a stable identity that encodes every threshold affecting policy semantics."""
+    return (
+        f"ZD-{generation:02d}-{int(age):03d}-{int(card * 100):02d}-"
+        f"{int(settle):02d}-{int(burst * 100):02d}"
+    )
+
+
 class DefenceCompiler:
     """Searches a compact policy space for the best safe generalization."""
 
@@ -141,7 +149,7 @@ class DefenceCompiler:
         best: tuple[float, Policy] | None = None
         for age, card, settle, burst in product(age_grid, card_grid, settlement_grid, burst_grid):
             candidate = Policy(
-                policy_id=f"ZD-{generation:02d}-{int(age):03d}-{int(card*100):02d}",
+                policy_id=_policy_id(generation, age, card, settle, burst),
                 merchant_age_max=age,
                 first_time_card_ratio_min=card,
                 settlement_change_days_max=settle,
