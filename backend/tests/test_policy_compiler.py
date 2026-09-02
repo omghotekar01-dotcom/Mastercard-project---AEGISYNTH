@@ -62,15 +62,19 @@ def test_compiler_output_respects_configured_false_positive_budget():
     assert policy.action == "STEP_UP"
 
 
-def test_score_policy_empty_attack_set_does_not_create_fake_coverage():
-    benign, _ = fixture_world()
-    policy = DefenceCompiler(max_fpr=0.02).synthesize(benign, [tx(
-        "A-seed", age=20, card=0.90, settle=2, burst=0.90, fraud=True
-    )], generation=3)
-    score = score_policy(policy, benign, [])
+@pytest.mark.parametrize("missing_side", ["benign", "attacks"])
+def test_score_policy_rejects_empty_evidence_populations(missing_side):
+    benign, attacks = fixture_world()
+    policy = DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=3)
+    if missing_side == "benign":
+        benign = []
+        expected_population = "benign"
+    else:
+        attacks = []
+        expected_population = "attack"
 
-    assert score.blocked_attacks == 0
-    assert score.coverage == 0.0
+    with pytest.raises(ValueError, match=rf"{expected_population} scoring population must not be empty"):
+        score_policy(policy, benign, attacks)
 
 
 @pytest.mark.parametrize("missing_side", ["benign", "attacks"])
