@@ -96,7 +96,8 @@ def review_package():
 
 
 @app.get("/api/v1/self-check")
-def self_check():
+def self_check(response: Response):
+    """Return a non-success status when any runtime contract check fails."""
     result = _benchmark()
     package = build_review_package(result)
     checks = {
@@ -115,8 +116,11 @@ def self_check():
         "dashboard_present": (STATIC_DIR / "index.html").exists(),
         "z3_formal_verifier_available": HAS_Z3,
     }
+    checks_pass = all(checks.values())
+    if not checks_pass:
+        response.status_code = 503
     return {
-        "status": "pass" if all(checks.values()) else "fail",
+        "status": "pass" if checks_pass else "fail",
         "version": APP_VERSION,
         "checks": checks,
         "scope": "synthetic prototype runtime self-check",

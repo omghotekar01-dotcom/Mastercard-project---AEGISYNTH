@@ -68,10 +68,10 @@ def test_runtime_self_check_passes_all_contracts():
     assert 'synthetic' in data['scope'].lower()
 
 
-def test_runtime_self_check_reports_missing_formal_verifier(monkeypatch):
+def test_runtime_self_check_fails_closed_without_formal_verifier(monkeypatch):
     monkeypatch.setattr(main_module, 'HAS_Z3', False)
     res = client.get('/api/v1/self-check')
-    assert res.status_code == 200
+    assert res.status_code == 503
     data = res.json()
     assert data['status'] == 'fail'
     assert data['checks']['z3_formal_verifier_available'] is False
