@@ -1,3 +1,5 @@
+import pytest
+
 from app.engine import AegisynthEngine
 from app.simulator import PaymentWorld
 from app.verification import verify_policy
@@ -53,3 +55,8 @@ def test_payment_world_assigns_unique_ids_across_repeated_batches():
     assert attack_ids == ["A-000000", "A-000001", "A-000002", "A-000003", "A-000004"]
     assert len(benign_ids) == len(set(benign_ids))
     assert len(attack_ids) == len(set(attack_ids))
+
+
+def test_baseline_attack_success_rejects_empty_population():
+    with pytest.raises(ValueError, match="baseline attack population must not be empty"):
+        AegisynthEngine._baseline_attack_success([])

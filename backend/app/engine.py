@@ -11,11 +11,14 @@ class AegisynthEngine:
 
     @staticmethod
     def _baseline_attack_success(attacks) -> float:
+        """Compute baseline ASR only from a real, non-empty attack population."""
+        if not attacks:
+            raise ValueError("baseline attack population must not be empty")
         caught = sum(
             (tx.merchant_age_hours < 48 and tx.temporal_burst_score > 0.82)
             for tx in attacks
         )
-        return 1 - caught / max(1, len(attacks))
+        return 1 - caught / len(attacks)
 
     def run(self, generations: int = 4, attack_family: str = "ghost_merchant_swarm") -> LabResult:
         world = PaymentWorld(self.seed)
