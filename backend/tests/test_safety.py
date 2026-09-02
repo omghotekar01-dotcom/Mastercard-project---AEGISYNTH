@@ -65,6 +65,18 @@ def test_verifier_rejects_pass_as_triggered_defence():
     assert any("PASS" in note for note in notes)
 
 
+def test_verifier_rejects_schema_bypassed_non_string_action_without_raising():
+    base = AegisynthEngine(seed=42).run(generations=1).final_policy
+    payload = base.model_dump()
+    payload["action"] = []
+    policy = Policy.model_construct(**payload)
+
+    ok, notes = verify_policy(policy)
+
+    assert ok is False
+    assert notes == ["Policy action invalid: action must be a string"]
+
+
 def test_verifier_rejects_policy_above_latency_budget():
     policy = Policy(
         policy_id="LATENCY-FAIL",

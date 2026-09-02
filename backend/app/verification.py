@@ -38,6 +38,17 @@ def _validate_policy_identity(policy: Policy) -> tuple[bool, list[str]]:
     return True, []
 
 
+def _validate_policy_action(policy: Policy) -> tuple[bool, list[str]]:
+    """Reject schema-bypassed action values before allow-list membership checks."""
+    if not isinstance(policy.action, str):
+        return False, ["Policy action invalid: action must be a string"]
+    if policy.action not in ALLOWED_ACTIONS:
+        return False, ["Action is not allowed"]
+    if policy.action == "PASS":
+        return False, ["Compiled fraud defences may not use PASS as the triggered action"]
+    return True, []
+
+
 def _validate_policy_numeric_fields(policy: Policy) -> tuple[bool, list[str]]:
     """Fail closed if schema-bypassed policy numerics are malformed."""
     bounded_fields = {
@@ -82,15 +93,15 @@ def verify_policy(
     if not identity_ok:
         return False, identity_notes
 
+    action_ok, action_notes = _validate_policy_action(policy)
+    if not action_ok:
+        return False, action_notes
+
     policy_numbers_ok, policy_number_notes = _validate_policy_numeric_fields(policy)
     if not policy_numbers_ok:
         return False, policy_number_notes
 
     notes: list[str] = []
-    if policy.action not in ALLOWED_ACTIONS:
-        return False, ["Action is not allowed"]
-    if policy.action == "PASS":
-        return False, ["Compiled fraud defences may not use PASS as the triggered action"]
     if policy.false_positive_rate > max_fpr:
         return False, ["False-positive budget exceeded"]
     if policy.estimated_latency_ms > max_latency_ms:
