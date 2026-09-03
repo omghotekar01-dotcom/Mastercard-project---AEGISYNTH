@@ -29,15 +29,18 @@ def matches(policy: Policy, tx: Transaction) -> bool:
 
 
 def score_policy(policy: Policy, benign: list[Transaction], attacks: list[Transaction]) -> Score:
-    """Score a policy only when both evidence populations are present.
+    """Score a policy only against valid, independent evidence populations.
 
-    A missing denominator is invalid evaluation evidence, not a meaningful zero rate.
-    Fail closed instead of manufacturing coverage/FPR values from empty datasets.
+    A missing denominator or contaminated evidence is invalid evaluation evidence, not a
+    meaningful rate. Keep direct scoring calls behind the same validation boundary used
+    by compiler synthesis so benchmark metrics cannot bypass label, identity, or feature
+    domain checks.
     """
     if not benign:
         raise ValueError("benign scoring population must not be empty")
     if not attacks:
         raise ValueError("attack scoring population must not be empty")
+    _validate_evaluation_populations(benign, attacks)
 
     blocked = sum(matches(policy, tx) for tx in attacks)
     benign_hits = sum(matches(policy, tx) for tx in benign)
