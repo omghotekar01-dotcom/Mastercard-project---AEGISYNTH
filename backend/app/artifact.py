@@ -130,6 +130,10 @@ def _validate_result_consistency(result: LabResult) -> None:
         result.baseline_attack_success_rate - result.final_attack_success_rate,
         _METRIC_PRECISION,
     )
+    # baseline_attack_success_rate is itself serialized at four decimals while the engine
+    # computes the reduction from the pre-rounded baseline. Reconstructing from the public
+    # LabResult can therefore differ by at most one unit in the last reported decimal.
+    # Decimal comparison makes the inclusive 0.0001 boundary deterministic across runtimes.
     if _metric_delta(observed_metrics["attack_success_reduction"], expected_reduction) > _METRIC_ULP:
         raise ValueError("Review package summary metrics are inconsistent with the final policy/run")
 
