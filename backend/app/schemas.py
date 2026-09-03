@@ -90,6 +90,15 @@ class CounterexampleTrace(BaseModel):
     def reject_boolean_escaped_rate(cls, value: object) -> object:
         return _reject_boolean_numeric_input(value)
 
+    @field_validator("sample_tx_ids")
+    @classmethod
+    def require_valid_sample_identities(cls, value: list[str]) -> list[str]:
+        if any(not tx_id.strip() or len(tx_id) > 64 for tx_id in value):
+            raise ValueError("sample_tx_ids must contain non-blank transaction IDs of at most 64 characters")
+        if len(set(value)) != len(value):
+            raise ValueError("sample_tx_ids must not contain duplicate transaction IDs")
+        return value
+
     @model_validator(mode="after")
     def require_consistent_escape_evidence(self) -> "CounterexampleTrace":
         if self.escaped_count > self.redteam_attack_count:
