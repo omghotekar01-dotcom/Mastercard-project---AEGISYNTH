@@ -2,7 +2,12 @@ import hashlib
 
 import pytest
 
-from app.artifact import _canonical_fields, build_review_package, verify_review_package
+from app.artifact import (
+    _canonical_fields,
+    _matches_compiler_profile,
+    build_review_package,
+    verify_review_package,
+)
 from app.engine import AegisynthEngine
 
 
@@ -34,6 +39,19 @@ def test_current_review_package_matches_declared_compiler_profile():
     package = _valid_package()
 
     assert verify_review_package(package) is True
+
+
+def test_compiler_profile_reconstructs_decimal_threshold_policy_ids_without_float_drift():
+    package = _valid_package().model_copy(deep=True)
+    generation = package.provenance.generation_count
+    package.policy.first_time_card_ratio_min = 0.58
+    package.policy.temporal_burst_score_min = 0.58
+    package.policy.policy_id = (
+        f"ZD-{generation:02d}-{int(package.policy.merchant_age_max):03d}-58-"
+        f"{int(package.policy.settlement_change_days_max):02d}-58"
+    )
+
+    assert _matches_compiler_profile(package) is True
 
 
 def test_builder_rejects_non_contract_false_positive_budget():
