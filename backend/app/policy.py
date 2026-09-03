@@ -157,8 +157,8 @@ class DefenceCompiler:
         self.max_fpr = max_fpr
 
     def synthesize(self, benign: list[Transaction], attacks: list[Transaction], generation: int) -> Policy:
-        if isinstance(generation, bool) or not isinstance(generation, int) or generation < 0:
-            raise ValueError("generation must be a non-negative integer")
+        if isinstance(generation, bool) or not isinstance(generation, int) or not 0 <= generation <= 8:
+            raise ValueError("generation must be a non-negative integer within [0, 8]")
         _validate_evaluation_populations(benign, attacks)
 
         age_grid = [48, 72, 96, 120, 168, 240]
