@@ -5,8 +5,8 @@ from app.engine import AegisynthEngine
 from app.schemas import LabResult
 
 
-def _result_payload() -> dict:
-    return AegisynthEngine(seed=42).run(generations=2).model_dump()
+def _result_payload(generations: int = 2) -> dict:
+    return AegisynthEngine(seed=42).run(generations=generations).model_dump()
 
 
 def test_lab_result_rejects_empty_iterations():
@@ -14,6 +14,23 @@ def test_lab_result_rejects_empty_iterations():
     payload["iterations"] = []
 
     with pytest.raises(ValidationError, match="iterations must contain at least one result"):
+        LabResult.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    "iteration_numbers",
+    [
+        [1, 3, 4],
+        [1, 2, 2],
+        [2, 1, 3],
+    ],
+)
+def test_lab_result_rejects_non_contiguous_or_reordered_iteration_history(iteration_numbers):
+    payload = _result_payload(generations=3)
+    for item, iteration in zip(payload["iterations"], iteration_numbers, strict=True):
+        item["iteration"] = iteration
+
+    with pytest.raises(ValidationError, match="iterations must be contiguous and ordered starting at 1"):
         LabResult.model_validate(payload)
 
 

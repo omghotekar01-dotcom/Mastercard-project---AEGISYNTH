@@ -166,6 +166,10 @@ class LabResult(BaseModel):
     def require_consistent_final_evidence(self) -> "LabResult":
         if not self.iterations:
             raise ValueError("iterations must contain at least one result")
+        expected_iterations = list(range(1, len(self.iterations) + 1))
+        observed_iterations = [item.iteration for item in self.iterations]
+        if observed_iterations != expected_iterations:
+            raise ValueError("iterations must be contiguous and ordered starting at 1")
         last = self.iterations[-1]
         if self.final_policy != last.candidate:
             raise ValueError("final_policy must equal the last iteration candidate")
