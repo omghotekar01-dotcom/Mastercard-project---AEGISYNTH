@@ -34,6 +34,17 @@ def test_readiness_fails_closed_without_formal_verifier(monkeypatch):
     assert data['formal_verifier'] == 'unavailable'
 
 
+def test_readiness_fails_closed_without_dashboard(monkeypatch, tmp_path):
+    monkeypatch.setattr(main_module, 'STATIC_DIR', tmp_path)
+    res = client.get('/ready')
+    assert res.status_code == 503
+    data = res.json()
+    assert data['status'] == 'not_ready'
+    assert data['checks']['dashboard_present'] is False
+    assert data['checks']['z3_formal_verifier_available'] is True
+    assert data['formal_verifier'] == 'z3'
+
+
 def test_meta_is_explicitly_synthetic_and_governed():
     res = client.get('/api/v1/meta')
     assert res.status_code == 200
