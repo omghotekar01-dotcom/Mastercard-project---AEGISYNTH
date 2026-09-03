@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 from dataclasses import dataclass
+from decimal import Decimal
 from itertools import product
 from .schemas import Policy, Transaction
 
@@ -167,11 +168,16 @@ def _validate_evaluation_populations(
         _validate_policy_features(tx, "attack")
 
 
+def _percent_code(value: float) -> int:
+    """Encode a compiler percentage threshold without binary-float truncation drift."""
+    return int(Decimal(str(value)) * 100)
+
+
 def _policy_id(generation: int, age: int, card: float, settle: int, burst: float) -> str:
     """Return a stable identity that encodes every threshold affecting policy semantics."""
     return (
-        f"ZD-{generation:02d}-{int(age):03d}-{int(card * 100):02d}-"
-        f"{int(settle):02d}-{int(burst * 100):02d}"
+        f"ZD-{generation:02d}-{int(age):03d}-{_percent_code(card):02d}-"
+        f"{int(settle):02d}-{_percent_code(burst):02d}"
     )
 
 
