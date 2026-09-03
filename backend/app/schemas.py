@@ -162,6 +162,29 @@ class LabResult(BaseModel):
     def reject_boolean_result_rates(cls, value: object) -> object:
         return _reject_boolean_numeric_input(value)
 
+    @model_validator(mode="after")
+    def require_consistent_final_evidence(self) -> "LabResult":
+        if not self.iterations:
+            raise ValueError("iterations must contain at least one result")
+        last = self.iterations[-1]
+        if self.final_policy != last.candidate:
+            raise ValueError("final_policy must equal the last iteration candidate")
+        if self.final_attack_success_rate != last.attack_success_rate:
+            raise ValueError("final_attack_success_rate must equal the last iteration attack_success_rate")
+        if self.metrics.final_fraud_coverage != self.final_policy.fraud_coverage:
+            raise ValueError("metrics.final_fraud_coverage must equal final_policy.fraud_coverage")
+        if self.metrics.final_false_positive_rate != self.final_policy.false_positive_rate:
+            raise ValueError("metrics.final_false_positive_rate must equal final_policy.false_positive_rate")
+        if self.metrics.estimated_policy_latency_ms != self.final_policy.estimated_latency_ms:
+            raise ValueError("metrics.estimated_policy_latency_ms must equal final_policy.estimated_latency_ms")
+        expected_reduction = round(self.baseline_attack_success_rate - self.final_attack_success_rate, 4)
+        if self.metrics.attack_success_reduction != expected_reduction:
+            raise ValueError("metrics.attack_success_reduction must equal baseline minus final attack success rate")
+        expected_acceptance = round(1 - self.final_policy.false_positive_rate, 4)
+        if self.metrics.benign_acceptance_rate != expected_acceptance:
+            raise ValueError("metrics.benign_acceptance_rate must equal one minus final false positive rate")
+        return self
+
 
 class CompilationProvenance(BaseModel):
     """Deterministic metadata describing how a review artifact was produced."""
