@@ -130,10 +130,6 @@ def _validate_result_consistency(result: LabResult) -> None:
         result.baseline_attack_success_rate - result.final_attack_success_rate,
         _METRIC_PRECISION,
     )
-    # baseline_attack_success_rate is itself serialized at four decimals while the engine
-    # computes the reduction from the pre-rounded baseline. Reconstructing from the public
-    # LabResult can therefore differ by at most one unit in the last reported decimal.
-    # Decimal comparison makes the inclusive 0.0001 boundary deterministic across runtimes.
     if _metric_delta(observed_metrics["attack_success_reduction"], expected_reduction) > _METRIC_ULP:
         raise ValueError("Review package summary metrics are inconsistent with the final policy/run")
 
@@ -147,6 +143,16 @@ def _validate_result_consistency(result: LabResult) -> None:
     }
     if any(observed_metrics[name] != value for name, value in expected_exact_metrics.items()):
         raise ValueError("Review package summary metrics are inconsistent with the final policy/run")
+
+
+def _require_supported_review_budgets(max_fpr: float, max_latency_ms: float) -> None:
+    """Prevent the builder from emitting a package the pinned review contract rejects."""
+    if max_fpr != DEFAULT_MAX_FPR or max_latency_ms != DEFAULT_MAX_POLICY_LATENCY_MS:
+        raise ValueError(
+            "Review package contract requires the pinned business budgets: "
+            f"max_fpr={DEFAULT_MAX_FPR} and "
+            f"max_latency_ms={DEFAULT_MAX_POLICY_LATENCY_MS}"
+        )
 
 
 def _validate_result_for_review(
@@ -191,6 +197,7 @@ def build_review_package(
     governance/scope state. Deployment remains NOT_DEPLOYED until an external
     human-governance system acts.
     """
+    _require_supported_review_budgets(max_fpr=max_fpr, max_latency_ms=max_latency_ms)
     _validate_result_for_review(
         result,
         max_fpr=max_fpr,
