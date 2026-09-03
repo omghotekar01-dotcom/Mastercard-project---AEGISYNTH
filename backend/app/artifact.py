@@ -35,6 +35,11 @@ def _metric_delta(observed: float, expected: float) -> Decimal:
     return abs(Decimal(str(observed)) - Decimal(str(expected)))
 
 
+def _percent_code(value: float) -> int:
+    """Encode compiler percentage thresholds identically to policy ID generation."""
+    return int(Decimal(str(value)) * 100)
+
+
 def _canonical_fields(
     package_version: str,
     attack_family: str,
@@ -236,9 +241,9 @@ def _matches_compiler_profile(package: ReviewPackage) -> bool:
     generation = package.provenance.generation_count
     expected_policy_id = (
         f"ZD-{generation:02d}-{int(policy.merchant_age_max):03d}-"
-        f"{int(policy.first_time_card_ratio_min * 100):02d}-"
+        f"{_percent_code(policy.first_time_card_ratio_min):02d}-"
         f"{int(policy.settlement_change_days_max):02d}-"
-        f"{int(policy.temporal_burst_score_min * 100):02d}"
+        f"{_percent_code(policy.temporal_burst_score_min):02d}"
     )
     return (
         policy.merchant_age_max in _COMPILER_AGE_GRID
