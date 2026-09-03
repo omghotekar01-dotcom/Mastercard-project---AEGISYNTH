@@ -56,7 +56,7 @@ class Policy(BaseModel):
     action: Action = "STEP_UP"
     fraud_coverage: float = Field(default=0.0, ge=0, le=1)
     false_positive_rate: float = Field(default=0.0, ge=0, le=1)
-    estimated_latency_ms: float = Field(default=0.0, ge=0)
+    estimated_latency_ms: float = Field(default=0.0, ge=0, allow_inf_nan=False)
     counterexamples_remaining: int = Field(default=0, ge=0, strict=True)
     verified: bool = False
     explanation: str = Field(default="", max_length=1000)
@@ -108,7 +108,7 @@ class LabMetrics(BaseModel):
     attack_success_reduction: float = Field(ge=-1, le=1)
     final_fraud_coverage: float = Field(ge=0, le=1)
     final_false_positive_rate: float = Field(ge=0, le=1)
-    estimated_policy_latency_ms: float = Field(ge=0)
+    estimated_policy_latency_ms: float = Field(ge=0, allow_inf_nan=False)
     benign_acceptance_rate: float = Field(ge=0, le=1)
 
     @field_validator(
@@ -151,7 +151,7 @@ class CompilationProvenance(BaseModel):
     verifier_id: str = Field(min_length=1, max_length=80)
     generation_count: int = Field(ge=1, le=8, strict=True)
     max_false_positive_rate: float = Field(ge=0, le=1)
-    max_policy_latency_ms: float = Field(gt=0)
+    max_policy_latency_ms: float = Field(gt=0, allow_inf_nan=False)
 
     @field_validator(
         "max_false_positive_rate",

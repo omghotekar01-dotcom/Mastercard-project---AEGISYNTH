@@ -79,6 +79,36 @@ def test_transaction_rejects_non_finite_numeric_features(field, value):
         Transaction(**payload)
 
 
+@pytest.mark.parametrize("value", [math.inf, -math.inf, math.nan])
+def test_policy_rejects_non_finite_latency(value):
+    payload = _policy().model_dump()
+    payload["estimated_latency_ms"] = value
+
+    with pytest.raises(ValidationError):
+        Policy(**payload)
+
+
+@pytest.mark.parametrize("value", [math.inf, -math.inf, math.nan])
+def test_lab_metrics_reject_non_finite_latency(value):
+    payload = _metrics_payload()
+    payload["estimated_policy_latency_ms"] = value
+
+    with pytest.raises(ValidationError):
+        LabMetrics(**payload)
+
+
+@pytest.mark.parametrize("value", [math.inf, -math.inf, math.nan])
+def test_compilation_provenance_rejects_non_finite_latency_budget(value):
+    with pytest.raises(ValidationError):
+        CompilationProvenance(
+            compiler_id="compiler",
+            verifier_id="verifier",
+            generation_count=1,
+            max_false_positive_rate=0.02,
+            max_policy_latency_ms=value,
+        )
+
+
 @pytest.mark.parametrize("value", [False, True])
 def test_counterexample_trace_rejects_boolean_escaped_rate(value):
     with pytest.raises(ValidationError):
