@@ -246,6 +246,8 @@ def _has_supported_review_contract(package: ReviewPackage) -> bool:
         package.package_version == REVIEW_PACKAGE_VERSION
         and package.provenance.compiler_id == COMPILER_ID
         and package.provenance.verifier_id == VERIFIER_ID
+        and package.provenance.max_false_positive_rate == DEFAULT_MAX_FPR
+        and package.provenance.max_policy_latency_ms == DEFAULT_MAX_POLICY_LATENCY_MS
         and package.approval_status == APPROVAL_STATUS
         and package.deployment_status == DEPLOYMENT_STATUS
         and package.synthetic_only is SYNTHETIC_ONLY

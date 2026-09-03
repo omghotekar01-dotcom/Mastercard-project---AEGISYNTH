@@ -59,3 +59,19 @@ def test_recomputed_digest_cannot_claim_review_action_was_compiler_emitted():
     tampered.artifact_sha256 = _recompute_digest(tampered)
 
     assert verify_review_package(tampered) is False
+
+
+def test_recomputed_digest_cannot_loosen_false_positive_budget():
+    tampered = _valid_package().model_copy(deep=True)
+    tampered.provenance.max_false_positive_rate = 0.20
+    tampered.artifact_sha256 = _recompute_digest(tampered)
+
+    assert verify_review_package(tampered) is False
+
+
+def test_recomputed_digest_cannot_loosen_latency_budget():
+    tampered = _valid_package().model_copy(deep=True)
+    tampered.provenance.max_policy_latency_ms = 50.0
+    tampered.artifact_sha256 = _recompute_digest(tampered)
+
+    assert verify_review_package(tampered) is False
