@@ -1,3 +1,5 @@
+import math
+
 import pytest
 from pydantic import ValidationError
 
@@ -8,6 +10,7 @@ from app.schemas import (
     LabMetrics,
     LabResult,
     Policy,
+    Transaction,
 )
 
 
@@ -38,6 +41,42 @@ def _metrics_payload() -> dict:
         "estimated_policy_latency_ms": 1.0,
         "benign_acceptance_rate": 1.0,
     }
+
+
+def _transaction_payload() -> dict:
+    return {
+        "tx_id": "synthetic-1",
+        "amount": 10.0,
+        "merchant_age_hours": 24.0,
+        "first_time_card_ratio": 0.5,
+        "settlement_change_days": 2.0,
+        "temporal_burst_score": 0.4,
+        "device_entropy": 0.7,
+        "geo_velocity": 3.0,
+        "label": 0,
+        "attack_family": "benign",
+    }
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "amount",
+        "merchant_age_hours",
+        "first_time_card_ratio",
+        "settlement_change_days",
+        "temporal_burst_score",
+        "device_entropy",
+        "geo_velocity",
+    ],
+)
+@pytest.mark.parametrize("value", [math.inf, -math.inf, math.nan])
+def test_transaction_rejects_non_finite_numeric_features(field, value):
+    payload = _transaction_payload()
+    payload[field] = value
+
+    with pytest.raises(ValidationError):
+        Transaction(**payload)
 
 
 @pytest.mark.parametrize("value", [False, True])

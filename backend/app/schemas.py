@@ -20,13 +20,13 @@ class Transaction(BaseModel):
     """Synthetic transaction features used by the defensive laboratory."""
 
     tx_id: str = Field(min_length=1, max_length=64)
-    amount: float = Field(ge=0)
-    merchant_age_hours: float = Field(ge=0)
-    first_time_card_ratio: float = Field(ge=0, le=1)
-    settlement_change_days: float = Field(ge=0)
-    temporal_burst_score: float = Field(ge=0, le=1)
-    device_entropy: float = Field(ge=0, le=1)
-    geo_velocity: float = Field(ge=0)
+    amount: float = Field(ge=0, allow_inf_nan=False)
+    merchant_age_hours: float = Field(ge=0, allow_inf_nan=False)
+    first_time_card_ratio: float = Field(ge=0, le=1, allow_inf_nan=False)
+    settlement_change_days: float = Field(ge=0, allow_inf_nan=False)
+    temporal_burst_score: float = Field(ge=0, le=1, allow_inf_nan=False)
+    device_entropy: float = Field(ge=0, le=1, allow_inf_nan=False)
+    geo_velocity: float = Field(ge=0, allow_inf_nan=False)
     label: int = Field(ge=0, le=1, strict=True)
     attack_family: str = Field(default="benign", min_length=1, max_length=64)
 
