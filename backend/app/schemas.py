@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, StrictBool, field_validator, model_validator
 
 Action = Literal["PASS", "STEP_UP", "REVIEW"]
 ApprovalStatus = Literal["HUMAN_APPROVAL_REQUIRED", "APPROVED", "REJECTED"]
@@ -58,7 +58,7 @@ class Policy(BaseModel):
     false_positive_rate: float = Field(default=0.0, ge=0, le=1)
     estimated_latency_ms: float = Field(default=0.0, ge=0, allow_inf_nan=False)
     counterexamples_remaining: int = Field(default=0, ge=0, strict=True)
-    verified: bool = False
+    verified: StrictBool = False
     explanation: str = Field(default="", max_length=1000)
 
     @field_validator(
