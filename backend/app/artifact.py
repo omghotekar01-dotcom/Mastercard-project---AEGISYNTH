@@ -22,6 +22,12 @@ SYNTHETIC_ONLY = True
 PRODUCTION_CLAIM = False
 _METRIC_PRECISION = 4
 _METRIC_ULP = Decimal("0.0001")
+_COMPILER_AGE_GRID = {48, 72, 96, 120, 168, 240}
+_COMPILER_CARD_GRID = {0.50, 0.58, 0.64, 0.70, 0.76}
+_COMPILER_SETTLEMENT_GRID = {7, 14, 21, 30, 45}
+_COMPILER_BURST_GRID = {0.50, 0.58, 0.64, 0.70, 0.76}
+_COMPILER_ACTION = "STEP_UP"
+_COMPILER_LATENCY_MS = 0.35
 
 
 def _metric_delta(observed: float, expected: float) -> Decimal:
@@ -207,6 +213,33 @@ def build_review_package(
     )
 
 
+def _matches_compiler_profile(package: ReviewPackage) -> bool:
+    """Bind claimed compiler provenance to the exact policy shape this compiler can emit.
+
+    The artifact digest is not authentication, so a caller able to recompute it must not be
+    able to relabel an arbitrary Z3-safe policy as output of compact-grid-search-v1. Require
+    the final generation, threshold grids, action, latency, and semantic policy ID to match
+    the compiler profile used by this package contract.
+    """
+    policy = package.policy
+    generation = package.provenance.generation_count
+    expected_policy_id = (
+        f"ZD-{generation:02d}-{int(policy.merchant_age_max):03d}-"
+        f"{int(policy.first_time_card_ratio_min * 100):02d}-"
+        f"{int(policy.settlement_change_days_max):02d}-"
+        f"{int(policy.temporal_burst_score_min * 100):02d}"
+    )
+    return (
+        policy.merchant_age_max in _COMPILER_AGE_GRID
+        and policy.first_time_card_ratio_min in _COMPILER_CARD_GRID
+        and policy.settlement_change_days_max in _COMPILER_SETTLEMENT_GRID
+        and policy.temporal_burst_score_min in _COMPILER_BURST_GRID
+        and policy.action == _COMPILER_ACTION
+        and policy.estimated_latency_ms == _COMPILER_LATENCY_MS
+        and policy.policy_id == expected_policy_id
+    )
+
+
 def _has_supported_review_contract(package: ReviewPackage) -> bool:
     """Fail closed unless the handoff matches the currently supported safe contract."""
     return (
@@ -217,6 +250,7 @@ def _has_supported_review_contract(package: ReviewPackage) -> bool:
         and package.deployment_status == DEPLOYMENT_STATUS
         and package.synthetic_only is SYNTHETIC_ONLY
         and package.production_claim is PRODUCTION_CLAIM
+        and _matches_compiler_profile(package)
     )
 
 
