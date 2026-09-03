@@ -32,9 +32,13 @@ def _validate_budgets(max_fpr: float, max_latency_ms: float) -> tuple[bool, list
 
 
 def _validate_policy_identity(policy: Policy) -> tuple[bool, list[str]]:
-    """Require a durable policy identity at the verification trust boundary."""
+    """Require the schema's durable policy identity contract at the verification boundary."""
     if not isinstance(policy.policy_id, str) or not policy.policy_id.strip():
         return False, ["Policy identity invalid: policy_id must be a non-empty string"]
+    if len(policy.policy_id) > 80:
+        return False, ["Policy identity invalid: policy_id must be at most 80 characters"]
+    if policy.policy_id != policy.policy_id.strip():
+        return False, ["Policy identity invalid: policy_id must not contain surrounding whitespace"]
     return True, []
 
 
