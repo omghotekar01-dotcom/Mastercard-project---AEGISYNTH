@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 Action = Literal["PASS", "STEP_UP", "REVIEW"]
 ApprovalStatus = Literal["HUMAN_APPROVAL_REQUIRED", "APPROVED", "REJECTED"]
@@ -90,6 +90,17 @@ class CounterexampleTrace(BaseModel):
     def reject_boolean_escaped_rate(cls, value: object) -> object:
         return _reject_boolean_numeric_input(value)
 
+    @model_validator(mode="after")
+    def require_consistent_escape_evidence(self) -> "CounterexampleTrace":
+        if self.escaped_count > self.redteam_attack_count:
+            raise ValueError("escaped_count cannot exceed redteam_attack_count")
+        expected_rate = round(self.escaped_count / self.redteam_attack_count, 4)
+        if self.escaped_rate != expected_rate:
+            raise ValueError("escaped_rate must equal escaped_count / redteam_attack_count rounded to 4 decimals")
+        if len(self.sample_tx_ids) > self.escaped_count:
+            raise ValueError("sample_tx_ids cannot contain more entries than escaped_count")
+        return self
+
 
 class IterationResult(BaseModel):
     iteration: int = Field(ge=1, strict=True)
@@ -102,6 +113,14 @@ class IterationResult(BaseModel):
     @classmethod
     def reject_boolean_attack_success_rate(cls, value: object) -> object:
         return _reject_boolean_numeric_input(value)
+
+    @model_validator(mode="after")
+    def require_trace_counterexample_consistency(self) -> "IterationResult":
+        if self.counterexamples != self.trace.escaped_count:
+            raise ValueError("counterexamples must equal trace.escaped_count")
+        if self.candidate.counterexamples_remaining != self.counterexamples:
+            raise ValueError("candidate.counterexamples_remaining must equal counterexamples")
+        return self
 
 
 class LabMetrics(BaseModel):
