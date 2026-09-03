@@ -212,14 +212,14 @@ class CompilationProvenance(BaseModel):
 class ReviewPackage(BaseModel):
     """Immutable review handoff generated after synthesis and verification."""
 
-    package_version: str = "1.2"
+    package_version: Literal["1.2"] = "1.2"
     artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     attack_family: str = Field(min_length=1, max_length=64)
     seed: int = Field(ge=0, strict=True)
     provenance: CompilationProvenance
     policy: Policy
     verification_notes: list[str]
-    approval_status: ApprovalStatus = "HUMAN_APPROVAL_REQUIRED"
-    deployment_status: DeploymentStatus = "NOT_DEPLOYED"
+    approval_status: Literal["HUMAN_APPROVAL_REQUIRED"] = "HUMAN_APPROVAL_REQUIRED"
+    deployment_status: Literal["NOT_DEPLOYED"] = "NOT_DEPLOYED"
     synthetic_only: Literal[True] = True
     production_claim: Literal[False] = False
