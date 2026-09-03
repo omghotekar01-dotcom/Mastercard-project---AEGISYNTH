@@ -1,5 +1,7 @@
 import hashlib
 
+import pytest
+
 from app.artifact import _canonical_fields, build_review_package, verify_review_package
 from app.engine import AegisynthEngine
 
@@ -20,14 +22,28 @@ def _recompute_digest(package):
     return hashlib.sha256(canonical).hexdigest()
 
 
+def _valid_result():
+    return AegisynthEngine(seed=42).run(generations=4)
+
+
 def _valid_package():
-    return build_review_package(AegisynthEngine(seed=42).run(generations=4))
+    return build_review_package(_valid_result())
 
 
 def test_current_review_package_matches_declared_compiler_profile():
     package = _valid_package()
 
     assert verify_review_package(package) is True
+
+
+def test_builder_rejects_non_contract_false_positive_budget():
+    with pytest.raises(ValueError, match="pinned business budgets"):
+        build_review_package(_valid_result(), max_fpr=0.01)
+
+
+def test_builder_rejects_non_contract_latency_budget():
+    with pytest.raises(ValueError, match="pinned business budgets"):
+        build_review_package(_valid_result(), max_latency_ms=4.0)
 
 
 def test_recomputed_digest_cannot_relabel_generation_provenance():
