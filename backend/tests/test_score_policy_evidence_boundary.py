@@ -75,3 +75,30 @@ def test_score_policy_rejects_schema_bypassed_nonfinite_policy_feature():
 
     with pytest.raises(ValueError, match=r"attack transaction .* has non-finite merchant_age_hours"):
         score_policy(_policy(), benign, attacks)
+
+
+def test_score_policy_rejects_schema_bypassed_nonfinite_policy_threshold():
+    benign, attacks = _populations()
+    policy = _policy()
+    policy.__dict__["merchant_age_max"] = float("inf")
+
+    with pytest.raises(ValueError, match=r"scored policy has non-finite merchant_age_max"):
+        score_policy(policy, benign, attacks)
+
+
+def test_score_policy_rejects_schema_bypassed_out_of_range_policy_threshold():
+    benign, attacks = _populations()
+    policy = _policy()
+    policy.__dict__["first_time_card_ratio_min"] = 1.5
+
+    with pytest.raises(ValueError, match=r"scored policy has out-of-range first_time_card_ratio_min"):
+        score_policy(policy, benign, attacks)
+
+
+def test_score_policy_rejects_schema_bypassed_unsupported_action():
+    benign, attacks = _populations()
+    policy = _policy()
+    policy.__dict__["action"] = "DECLINE"
+
+    with pytest.raises(ValueError, match=r"scored policy action must be one of PASS, STEP_UP, or REVIEW"):
+        score_policy(policy, benign, attacks)

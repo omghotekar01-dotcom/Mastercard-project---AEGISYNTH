@@ -31,15 +31,16 @@ def matches(policy: Policy, tx: Transaction) -> bool:
 def score_policy(policy: Policy, benign: list[Transaction], attacks: list[Transaction]) -> Score:
     """Score a policy only against valid, independent evidence populations.
 
-    A missing denominator or contaminated evidence is invalid evaluation evidence, not a
-    meaningful rate. Keep direct scoring calls behind the same validation boundary used
-    by compiler synthesis so benchmark metrics cannot bypass label, identity, or feature
-    domain checks.
+    A missing denominator, contaminated evidence, or malformed policy is invalid evaluation
+    evidence, not a meaningful rate. Keep direct scoring calls behind the same validation
+    boundary used by compiler synthesis so benchmark metrics cannot bypass policy, label,
+    identity, or feature-domain checks.
     """
     if not benign:
         raise ValueError("benign scoring population must not be empty")
     if not attacks:
         raise ValueError("attack scoring population must not be empty")
+    _validate_policy_definition(policy)
     _validate_evaluation_populations(benign, attacks)
 
     blocked = sum(matches(policy, tx) for tx in attacks)
@@ -55,6 +56,31 @@ def score_policy(policy: Policy, benign: list[Transaction], attacks: list[Transa
 def _is_real_number(value: object) -> bool:
     """Accept real scalar evidence, but never Python booleans masquerading as 0/1."""
     return not isinstance(value, bool) and isinstance(value, (int, float))
+
+
+def _validate_policy_definition(policy: Policy) -> None:
+    """Fail closed if a schema-bypassed policy could distort scoring or exceed safe actions."""
+    if not isinstance(policy.policy_id, str) or not policy.policy_id.strip():
+        raise ValueError("scored policy must have a non-empty string policy_id")
+    if policy.action not in {"PASS", "STEP_UP", "REVIEW"}:
+        raise ValueError("scored policy action must be one of PASS, STEP_UP, or REVIEW")
+
+    bounds = {
+        "merchant_age_max": (0.0, float(24 * 365 * 20)),
+        "first_time_card_ratio_min": (0.0, 1.0),
+        "settlement_change_days_max": (0.0, 3650.0),
+        "temporal_burst_score_min": (0.0, 1.0),
+    }
+    for field, (minimum, maximum) in bounds.items():
+        value = getattr(policy, field)
+        if not _is_real_number(value):
+            raise ValueError(f"scored policy has non-numeric {field}")
+        if not math.isfinite(value):
+            raise ValueError(f"scored policy has non-finite {field}")
+        if value < minimum or value > maximum:
+            raise ValueError(
+                f"scored policy has out-of-range {field}; expected [{minimum:g}, {maximum:g}]"
+            )
 
 
 def _validate_policy_features(tx: Transaction, population: str) -> None:
