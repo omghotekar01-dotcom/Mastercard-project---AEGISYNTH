@@ -55,14 +55,26 @@ def test_trace_rejects_invalid_sample_identities():
         "escaped_rate": round(escaped_count / payload["redteam_attack_count"], 4),
     }
 
-    with pytest.raises(ValidationError, match="non-blank transaction IDs"):
-        CounterexampleTrace.model_validate({**payload, "sample_tx_ids": ["   "]})
-
-    with pytest.raises(ValidationError, match="non-blank transaction IDs"):
-        CounterexampleTrace.model_validate({**payload, "sample_tx_ids": ["x" * 65]})
+    for bad_id in ["", "   ", " rt-001", "rt-001 ", "rt 001", "rt\t001", "rt\n001", "x" * 65]:
+        with pytest.raises(ValidationError, match="canonical transaction IDs"):
+            CounterexampleTrace.model_validate({**payload, "sample_tx_ids": [bad_id]})
 
     with pytest.raises(ValidationError, match="must not contain duplicate transaction IDs"):
         CounterexampleTrace.model_validate({**payload, "sample_tx_ids": ["rt-001", "rt-001"]})
+
+
+def test_trace_accepts_current_canonical_sample_identities():
+    payload = _iteration_payload()["trace"]
+    if payload["escaped_count"] == 0:
+        payload = {
+            **payload,
+            "escaped_count": 1,
+            "escaped_rate": round(1 / payload["redteam_attack_count"], 4),
+            "sample_tx_ids": ["A-000001"],
+        }
+
+    trace = CounterexampleTrace.model_validate(payload)
+    assert all(tx_id and len(tx_id) <= 64 and not any(char.isspace() for char in tx_id) for tx_id in trace.sample_tx_ids)
 
 
 def test_current_engine_iteration_evidence_remains_valid():
