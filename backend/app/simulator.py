@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 import random
 from .schemas import Transaction
 
@@ -8,6 +9,13 @@ def _require_positive_count(name: str, value: object) -> int:
     if type(value) is not int or value <= 0:
         raise ValueError(f"{name} must be a positive integer")
     return value
+
+
+def _require_finite_hardness(value: object) -> float:
+    """Reject non-numeric or non-finite mutation inputs before benchmark RNG state advances."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        raise ValueError("hardness must be a finite number")
+    return float(value)
 
 
 class PaymentWorld:
@@ -47,7 +55,7 @@ class PaymentWorld:
     def attack(self, n: int = 500, family: str = "ghost_merchant_swarm", hardness: float = 0.0) -> list[Transaction]:
         """Generate a safe, fictional attack family. Hardness mutates values toward benign ranges."""
         n = _require_positive_count("attack sample count", n)
-        h = self._clip(hardness)
+        h = self._clip(_require_finite_hardness(hardness))
         rows: list[Transaction] = []
         start = self._attack_seq
         for i in range(n):
@@ -67,8 +75,9 @@ class PaymentWorld:
         return rows
 
     def calibration_set(self, benign_n: int = 1200, attack_n: int = 500, hardness: float = 0.0):
-        # Validate both counts before generating either population so a rejected call cannot
+        # Validate all inputs before generating either population so a rejected call cannot
         # partially consume RNG state and break retry reproducibility.
         _require_positive_count("benign sample count", benign_n)
         _require_positive_count("attack sample count", attack_n)
+        _require_finite_hardness(hardness)
         return self.benign(benign_n), self.attack(attack_n, hardness=hardness)
