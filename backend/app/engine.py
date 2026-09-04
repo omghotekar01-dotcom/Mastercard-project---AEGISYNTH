@@ -50,7 +50,11 @@ class AegisynthEngine:
             candidate.fraud_coverage = round(s.coverage, 4)
             candidate.false_positive_rate = round(s.fpr, 4)
             ok, notes = verify_policy(candidate, self.max_fpr)
-            candidate.verified = ok
+            if not ok:
+                raise RuntimeError(
+                    f"Policy verification failed at generation {generation}; refusing to emit unverified lab evidence"
+                )
+            candidate.verified = True
 
             trace = CounterexampleTrace(
                 training_attack_count=training_attack_count,
