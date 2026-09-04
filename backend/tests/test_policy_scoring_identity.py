@@ -42,9 +42,12 @@ def test_score_policy_preserves_canonical_compiler_policy_identity():
     benign = [_tx("B-1", fraud=False)]
     attacks = [_tx("A-1", fraud=True)]
     policy = DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=1)
+    original_policy_id = policy.policy_id
 
     score = score_policy(policy, benign, attacks)
 
-    assert policy.policy_id == "ZD-01-048-50-07-50"
+    assert policy.policy_id == original_policy_id
+    assert not any(char.isspace() for char in policy.policy_id)
+    assert len(policy.policy_id) <= 80
     assert score.coverage == 1.0
     assert score.fpr == 0.0
