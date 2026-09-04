@@ -22,8 +22,11 @@ def _policy() -> Policy:
     "bad_policy_id,expected_message",
     [
         ("X" * 81, "policy_id must be at most 80 characters"),
-        (" ZD-01-048-50-07-50", "policy_id must not contain surrounding whitespace"),
-        ("ZD-01-048-50-07-50 ", "policy_id must not contain surrounding whitespace"),
+        (" ZD-01-048-50-07-50", "policy_id must not contain whitespace"),
+        ("ZD-01-048-50-07-50 ", "policy_id must not contain whitespace"),
+        ("ZD-01-048-50 07-50", "policy_id must not contain whitespace"),
+        ("ZD-01-048-50\t07-50", "policy_id must not contain whitespace"),
+        ("ZD-01-048-50\n07-50", "policy_id must not contain whitespace"),
     ],
 )
 def test_verifier_rejects_schema_bypassed_policy_identity_drift(bad_policy_id, expected_message):
