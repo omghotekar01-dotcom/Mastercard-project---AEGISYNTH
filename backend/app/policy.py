@@ -113,6 +113,10 @@ def _validate_evidence_metadata(tx: Transaction, population: str, expected_label
     """Reject schema-bypassed identity or label values before set/equality semantics can mask them."""
     if not isinstance(tx.tx_id, str) or not tx.tx_id.strip():
         raise ValueError(f"{population} evaluation transaction must have a non-empty string tx_id")
+    if len(tx.tx_id) > 64:
+        raise ValueError(f"{population} evaluation transaction tx_id must be at most 64 characters")
+    if any(char.isspace() for char in tx.tx_id):
+        raise ValueError(f"{population} evaluation transaction tx_id must not contain whitespace")
     if type(tx.label) is not int or tx.label != expected_label:
         raise ValueError(
             f"{population} evaluation population must contain only label={expected_label} integer transactions"
