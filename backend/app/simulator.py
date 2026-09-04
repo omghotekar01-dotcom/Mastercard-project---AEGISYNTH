@@ -4,6 +4,13 @@ import random
 from .schemas import Transaction
 
 
+def _require_seed(value: object) -> int:
+    """Keep RNG initialization inside the same non-negative seed domain exposed by results."""
+    if type(value) is not int or value < 0:
+        raise ValueError("seed must be a non-negative integer")
+    return value
+
+
 def _require_positive_count(name: str, value: object) -> int:
     """Reject invalid sample sizes before synthetic-world state can advance."""
     if type(value) is not int or value <= 0:
@@ -33,8 +40,7 @@ class PaymentWorld:
     """Deterministic synthetic payment world; no real cardholder or merchant data is used."""
 
     def __init__(self, seed: int = 42):
-        if type(seed) is not int:
-            raise ValueError("seed must be an integer")
+        seed = _require_seed(seed)
         self.rng = random.Random(seed)
         self._benign_seq = 0
         self._attack_seq = 0
