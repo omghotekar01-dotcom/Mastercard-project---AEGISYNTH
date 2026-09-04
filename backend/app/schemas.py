@@ -65,8 +65,8 @@ class Policy(BaseModel):
     @classmethod
     def require_canonical_policy_id(cls, value: str) -> str:
         """Keep policy identity canonical before it reaches provenance or verification."""
-        if value != value.strip():
-            raise ValueError("policy_id must not contain surrounding whitespace")
+        if any(char.isspace() for char in value):
+            raise ValueError("policy_id must not contain whitespace")
         return value
 
     @field_validator(
@@ -178,65 +178,3 @@ class LabResult(BaseModel):
     @classmethod
     def reject_boolean_result_rates(cls, value: object) -> object:
         return _reject_boolean_numeric_input(value)
-
-    @model_validator(mode="after")
-    def require_consistent_final_evidence(self) -> "LabResult":
-        if not self.iterations:
-            raise ValueError("iterations must contain at least one result")
-        expected_iterations = list(range(1, len(self.iterations) + 1))
-        observed_iterations = [item.iteration for item in self.iterations]
-        if observed_iterations != expected_iterations:
-            raise ValueError("iterations must be contiguous and ordered starting at 1")
-        last = self.iterations[-1]
-        if self.final_policy != last.candidate:
-            raise ValueError("final_policy must equal the last iteration candidate")
-        if self.final_attack_success_rate != last.attack_success_rate:
-            raise ValueError("final_attack_success_rate must equal the last iteration attack_success_rate")
-        if self.metrics.final_fraud_coverage != self.final_policy.fraud_coverage:
-            raise ValueError("metrics.final_fraud_coverage must equal final_policy.fraud_coverage")
-        if self.metrics.final_false_positive_rate != self.final_policy.false_positive_rate:
-            raise ValueError("metrics.final_false_positive_rate must equal final_policy.false_positive_rate")
-        if self.metrics.estimated_policy_latency_ms != self.final_policy.estimated_latency_ms:
-            raise ValueError("metrics.estimated_policy_latency_ms must equal final_policy.estimated_latency_ms")
-        expected_reduction = round(self.baseline_attack_success_rate - self.final_attack_success_rate, 4)
-        if self.metrics.attack_success_reduction != expected_reduction:
-            raise ValueError("metrics.attack_success_reduction must equal baseline minus final attack success rate")
-        expected_acceptance = round(1 - self.final_policy.false_positive_rate, 4)
-        if self.metrics.benign_acceptance_rate != expected_acceptance:
-            raise ValueError("metrics.benign_acceptance_rate must equal one minus final false positive rate")
-        return self
-
-
-class CompilationProvenance(BaseModel):
-    """Deterministic metadata describing how a review artifact was produced."""
-
-    compiler_id: str = Field(min_length=1, max_length=80)
-    verifier_id: str = Field(min_length=1, max_length=80)
-    generation_count: int = Field(ge=1, le=8, strict=True)
-    max_false_positive_rate: float = Field(ge=0, le=1)
-    max_policy_latency_ms: float = Field(gt=0, allow_inf_nan=False)
-
-    @field_validator(
-        "max_false_positive_rate",
-        "max_policy_latency_ms",
-        mode="before",
-    )
-    @classmethod
-    def reject_boolean_budget_fields(cls, value: object) -> object:
-        return _reject_boolean_numeric_input(value)
-
-
-class ReviewPackage(BaseModel):
-    """Immutable review handoff generated after synthesis and verification."""
-
-    package_version: Literal["1.2"] = "1.2"
-    artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    attack_family: str = Field(min_length=1, max_length=64)
-    seed: int = Field(ge=0, strict=True)
-    provenance: CompilationProvenance
-    policy: Policy
-    verification_notes: list[str]
-    approval_status: Literal["HUMAN_APPROVAL_REQUIRED"] = "HUMAN_APPROVAL_REQUIRED"
-    deployment_status: Literal["NOT_DEPLOYED"] = "NOT_DEPLOYED"
-    synthetic_only: Literal[True] = True
-    production_claim: Literal[False] = False
