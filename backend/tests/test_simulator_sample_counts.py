@@ -19,12 +19,30 @@ def test_attack_rejects_invalid_sample_counts(bad_count):
         world.attack(bad_count)
 
 
+@pytest.mark.parametrize("bad_hardness", [True, False, float("nan"), float("inf"), float("-inf"), "0.5", None])
+def test_attack_rejects_non_finite_or_non_numeric_hardness(bad_hardness):
+    world = PaymentWorld(seed=42)
+
+    with pytest.raises(ValueError, match=r"hardness must be a finite number"):
+        world.attack(2, hardness=bad_hardness)
+
+
 def test_calibration_rejects_all_counts_before_rng_state_advances():
     world = PaymentWorld(seed=42)
     fresh = PaymentWorld(seed=42)
 
     with pytest.raises(ValueError, match=r"attack sample count must be a positive integer"):
         world.calibration_set(benign_n=3, attack_n=0)
+
+    assert [tx.model_dump() for tx in world.benign(2)] == [tx.model_dump() for tx in fresh.benign(2)]
+
+
+def test_calibration_rejects_bad_hardness_before_rng_state_advances():
+    world = PaymentWorld(seed=42)
+    fresh = PaymentWorld(seed=42)
+
+    with pytest.raises(ValueError, match=r"hardness must be a finite number"):
+        world.calibration_set(benign_n=3, attack_n=2, hardness=float("nan"))
 
     assert [tx.model_dump() for tx in world.benign(2)] == [tx.model_dump() for tx in fresh.benign(2)]
 
