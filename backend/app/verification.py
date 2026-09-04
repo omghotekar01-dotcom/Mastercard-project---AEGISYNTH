@@ -37,8 +37,8 @@ def _validate_policy_identity(policy: Policy) -> tuple[bool, list[str]]:
         return False, ["Policy identity invalid: policy_id must be a non-empty string"]
     if len(policy.policy_id) > 80:
         return False, ["Policy identity invalid: policy_id must be at most 80 characters"]
-    if policy.policy_id != policy.policy_id.strip():
-        return False, ["Policy identity invalid: policy_id must not contain surrounding whitespace"]
+    if any(char.isspace() for char in policy.policy_id):
+        return False, ["Policy identity invalid: policy_id must not contain whitespace"]
     return True, []
 
 
