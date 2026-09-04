@@ -27,6 +27,44 @@ def test_attack_rejects_non_finite_or_non_numeric_hardness(bad_hardness):
         world.attack(2, hardness=bad_hardness)
 
 
+@pytest.mark.parametrize("bad_family", ["", None, 123, "A" * 65])
+def test_attack_rejects_malformed_family_before_rng_state_advances(bad_family):
+    world = PaymentWorld(seed=42)
+    fresh = PaymentWorld(seed=42)
+
+    with pytest.raises(ValueError, match=r"attack family must be a non-empty string of at most 64 characters"):
+        world.attack(2, family=bad_family)
+
+    assert [tx.model_dump() for tx in world.attack(2)] == [tx.model_dump() for tx in fresh.attack(2)]
+
+
+@pytest.mark.parametrize("bad_family", [" ghost_merchant_swarm", "ghost merchant swarm", "ghost\tmerchant", "ghost\nmerchant"])
+def test_attack_rejects_whitespace_family_before_rng_state_advances(bad_family):
+    world = PaymentWorld(seed=42)
+    fresh = PaymentWorld(seed=42)
+
+    with pytest.raises(ValueError, match=r"attack family must not contain whitespace"):
+        world.attack(2, family=bad_family)
+
+    assert [tx.model_dump() for tx in world.attack(2)] == [tx.model_dump() for tx in fresh.attack(2)]
+
+
+def test_attack_rejects_reserved_benign_family_before_rng_state_advances():
+    world = PaymentWorld(seed=42)
+    fresh = PaymentWorld(seed=42)
+
+    with pytest.raises(ValueError, match=r"attack family must not use the reserved benign provenance label"):
+        world.attack(2, family="benign")
+
+    assert [tx.model_dump() for tx in world.attack(2)] == [tx.model_dump() for tx in fresh.attack(2)]
+
+
+def test_valid_custom_attack_family_is_preserved():
+    rows = PaymentWorld(seed=42).attack(2, family="synthetic_variant_1")
+
+    assert [tx.attack_family for tx in rows] == ["synthetic_variant_1", "synthetic_variant_1"]
+
+
 def test_calibration_rejects_all_counts_before_rng_state_advances():
     world = PaymentWorld(seed=42)
     fresh = PaymentWorld(seed=42)

@@ -18,6 +18,17 @@ def _require_finite_hardness(value: object) -> float:
     return float(value)
 
 
+def _require_attack_family(value: object) -> str:
+    """Require canonical synthetic-family provenance before benchmark RNG state advances."""
+    if not isinstance(value, str) or not value or len(value) > 64:
+        raise ValueError("attack family must be a non-empty string of at most 64 characters")
+    if any(char.isspace() for char in value):
+        raise ValueError("attack family must not contain whitespace")
+    if value == "benign":
+        raise ValueError("attack family must not use the reserved benign provenance label")
+    return value
+
+
 class PaymentWorld:
     """Deterministic synthetic payment world; no real cardholder or merchant data is used."""
 
@@ -55,6 +66,7 @@ class PaymentWorld:
     def attack(self, n: int = 500, family: str = "ghost_merchant_swarm", hardness: float = 0.0) -> list[Transaction]:
         """Generate a safe, fictional attack family. Hardness mutates values toward benign ranges."""
         n = _require_positive_count("attack sample count", n)
+        family = _require_attack_family(family)
         h = self._clip(_require_finite_hardness(hardness))
         rows: list[Transaction] = []
         start = self._attack_seq
