@@ -281,3 +281,10 @@ class ReviewPackage(BaseModel):
     @classmethod
     def require_canonical_attack_family(cls, value: str) -> str:
         return _require_canonical_attack_family(value)
+
+    @model_validator(mode="after")
+    def require_verified_review_policy(self) -> "ReviewPackage":
+        """Fail closed if an unverified policy is wrapped as a review-ready artifact."""
+        if self.policy.verified is not True:
+            raise ValueError("review package policy must be verified")
+        return self
