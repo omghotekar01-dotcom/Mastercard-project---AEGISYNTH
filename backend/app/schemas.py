@@ -61,6 +61,14 @@ class Policy(BaseModel):
     verified: StrictBool = False
     explanation: str = Field(default="", max_length=1000)
 
+    @field_validator("policy_id")
+    @classmethod
+    def require_canonical_policy_id(cls, value: str) -> str:
+        """Keep policy identity canonical before it reaches provenance or verification."""
+        if value != value.strip():
+            raise ValueError("policy_id must not contain surrounding whitespace")
+        return value
+
     @field_validator(
         "merchant_age_max",
         "first_time_card_ratio_min",
