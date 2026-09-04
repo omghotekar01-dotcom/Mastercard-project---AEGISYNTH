@@ -67,8 +67,12 @@ def _validate_policy_definition(policy: Policy) -> None:
         raise ValueError("scored policy policy_id must be at most 80 characters")
     if any(char.isspace() for char in policy.policy_id):
         raise ValueError("scored policy policy_id must not contain whitespace")
+    if not isinstance(policy.action, str):
+        raise ValueError("scored policy action must be a string")
     if policy.action not in {"PASS", "STEP_UP", "REVIEW"}:
         raise ValueError("scored policy action must be one of PASS, STEP_UP, or REVIEW")
+    if policy.action == "PASS":
+        raise ValueError("scored fraud defence may not use PASS as the triggered action")
 
     bounds = {
         "merchant_age_max": (0.0, float(24 * 365 * 20)),
