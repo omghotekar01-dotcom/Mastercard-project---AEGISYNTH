@@ -38,6 +38,25 @@ def test_score_policy_rejects_schema_bypassed_noncanonical_policy_ids(policy_id,
         score_policy(policy, benign, attacks)
 
 
+@pytest.mark.parametrize(
+    "action,expected_error",
+    [
+        (None, "action must be a string"),
+        (["STEP_UP"], "action must be a string"),
+        ("DECLINE", "action must be one of PASS, STEP_UP, or REVIEW"),
+        ("PASS", "may not use PASS as the triggered action"),
+    ],
+)
+def test_score_policy_rejects_schema_bypassed_unsafe_or_malformed_actions(action, expected_error):
+    benign = [_tx("B-1", fraud=False)]
+    attacks = [_tx("A-1", fraud=True)]
+    policy = DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=1)
+    policy.__dict__["action"] = action
+
+    with pytest.raises(ValueError, match=expected_error):
+        score_policy(policy, benign, attacks)
+
+
 def test_score_policy_preserves_canonical_compiler_policy_identity():
     benign = [_tx("B-1", fraud=False)]
     attacks = [_tx("A-1", fraud=True)]
