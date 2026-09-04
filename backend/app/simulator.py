@@ -2,6 +2,14 @@ from __future__ import annotations
 import random
 from .schemas import Transaction
 
+
+def _require_positive_count(name: str, value: object) -> int:
+    """Reject invalid sample sizes before synthetic-world state can advance."""
+    if type(value) is not int or value <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+    return value
+
+
 class PaymentWorld:
     """Deterministic synthetic payment world; no real cardholder or merchant data is used."""
 
@@ -16,6 +24,7 @@ class PaymentWorld:
         return max(lo, min(hi, x))
 
     def benign(self, n: int = 1200) -> list[Transaction]:
+        n = _require_positive_count("benign sample count", n)
         rows: list[Transaction] = []
         start = self._benign_seq
         for i in range(n):
@@ -37,6 +46,7 @@ class PaymentWorld:
 
     def attack(self, n: int = 500, family: str = "ghost_merchant_swarm", hardness: float = 0.0) -> list[Transaction]:
         """Generate a safe, fictional attack family. Hardness mutates values toward benign ranges."""
+        n = _require_positive_count("attack sample count", n)
         h = self._clip(hardness)
         rows: list[Transaction] = []
         start = self._attack_seq
@@ -57,4 +67,8 @@ class PaymentWorld:
         return rows
 
     def calibration_set(self, benign_n: int = 1200, attack_n: int = 500, hardness: float = 0.0):
+        # Validate both counts before generating either population so a rejected call cannot
+        # partially consume RNG state and break retry reproducibility.
+        _require_positive_count("benign sample count", benign_n)
+        _require_positive_count("attack sample count", attack_n)
         return self.benign(benign_n), self.attack(attack_n, hardness=hardness)
