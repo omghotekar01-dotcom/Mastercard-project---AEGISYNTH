@@ -80,6 +80,24 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Guard exact dependency declarations
+        run: |
+          node - <<'NODE'
+          const pkg = require('./package.json');
+          const groups = ['dependencies', 'devDependencies'];
+          const exact = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+          const violations = [];
+          for (const group of groups) {
+            for (const [name, version] of Object.entries(pkg[group] || {})) {
+              if (!exact.test(version)) violations.push(`${group}.${name}=${version}`);
+            }
+          }
+          if (violations.length) {
+            throw new Error(`Frontend dependency versions must be exact: ${violations.join(', ')}`);
+          }
+          console.log('frontend direct dependency declarations are exact');
+          NODE
+
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
