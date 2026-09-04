@@ -16,6 +16,15 @@ def _reject_boolean_numeric_input(value: object) -> object:
     return value
 
 
+def _require_canonical_attack_family(value: str) -> str:
+    """Require unambiguous non-benign provenance for judge-facing attack evidence."""
+    if any(char.isspace() for char in value):
+        raise ValueError("attack_family must not contain whitespace")
+    if value == "benign":
+        raise ValueError("attack_family must identify a non-benign synthetic attack family")
+    return value
+
+
 class Transaction(BaseModel):
     """Synthetic transaction features used by the defensive laboratory."""
 
@@ -170,6 +179,11 @@ class LabResult(BaseModel):
     verification_notes: list[str]
     metrics: LabMetrics
 
+    @field_validator("attack_family")
+    @classmethod
+    def require_canonical_attack_family(cls, value: str) -> str:
+        return _require_canonical_attack_family(value)
+
     @field_validator(
         "baseline_attack_success_rate",
         "final_attack_success_rate",
@@ -240,3 +254,8 @@ class ReviewPackage(BaseModel):
     deployment_status: Literal["NOT_DEPLOYED"] = "NOT_DEPLOYED"
     synthetic_only: Literal[True] = True
     production_claim: Literal[False] = False
+
+    @field_validator("attack_family")
+    @classmethod
+    def require_canonical_attack_family(cls, value: str) -> str:
+        return _require_canonical_attack_family(value)
