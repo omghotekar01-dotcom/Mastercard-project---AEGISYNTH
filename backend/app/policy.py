@@ -114,7 +114,7 @@ def _validate_policy_features(tx: Transaction, population: str) -> None:
 
 
 def _validate_evidence_metadata(tx: Transaction, population: str, expected_label: int) -> None:
-    """Reject schema-bypassed identity or label values before set/equality semantics can mask them."""
+    """Reject schema-bypassed identity, label, or provenance before scoring can trust evidence."""
     if not isinstance(tx.tx_id, str) or not tx.tx_id.strip():
         raise ValueError(f"{population} evaluation transaction must have a non-empty string tx_id")
     if len(tx.tx_id) > 64:
@@ -125,6 +125,16 @@ def _validate_evidence_metadata(tx: Transaction, population: str, expected_label
         raise ValueError(
             f"{population} evaluation population must contain only label={expected_label} integer transactions"
         )
+    if not isinstance(tx.attack_family, str) or not tx.attack_family or len(tx.attack_family) > 64:
+        raise ValueError(
+            f"{population} evaluation transaction attack_family must be a non-empty string of at most 64 characters"
+        )
+    if any(char.isspace() for char in tx.attack_family):
+        raise ValueError(f"{population} evaluation transaction attack_family must not contain whitespace")
+    if expected_label == 0 and tx.attack_family != "benign":
+        raise ValueError("benign evaluation population must use the benign attack_family provenance label")
+    if expected_label == 1 and tx.attack_family == "benign":
+        raise ValueError("attack evaluation population must not use the benign attack_family provenance label")
 
 
 def _duplicate_tx_ids(rows: list[Transaction]) -> set[str]:
