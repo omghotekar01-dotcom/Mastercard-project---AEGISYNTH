@@ -291,6 +291,16 @@ def _has_current_semantic_evidence(package: ReviewPackage) -> bool:
     return verified and package.verification_notes == current_notes
 
 
+def _has_valid_artifact_fingerprint(package: ReviewPackage) -> bool:
+    """Re-enforce the schema fingerprint contract at the verification trust boundary."""
+    digest = package.artifact_sha256
+    return (
+        isinstance(digest, str)
+        and len(digest) == 64
+        and all(character in "0123456789abcdef" for character in digest)
+    )
+
+
 def verify_review_package(package: ReviewPackage) -> bool:
     """Validate contract, protected-field integrity, and current semantic evidence.
 
@@ -298,6 +308,8 @@ def verify_review_package(package: ReviewPackage) -> bool:
     recompute SHA-256 after modifying an artifact, the exact policy must still pass the
     declared Z3/business guardrails and reproduce the stored verification evidence.
     """
+    if not _has_valid_artifact_fingerprint(package):
+        return False
     if not _has_supported_review_contract(package):
         return False
 
