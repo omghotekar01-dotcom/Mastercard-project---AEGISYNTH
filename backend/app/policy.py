@@ -63,6 +63,10 @@ def _validate_policy_definition(policy: Policy) -> None:
     """Fail closed if a schema-bypassed policy could distort scoring or exceed safe actions."""
     if not isinstance(policy.policy_id, str) or not policy.policy_id.strip():
         raise ValueError("scored policy must have a non-empty string policy_id")
+    if len(policy.policy_id) > 80:
+        raise ValueError("scored policy policy_id must be at most 80 characters")
+    if any(char.isspace() for char in policy.policy_id):
+        raise ValueError("scored policy policy_id must not contain whitespace")
     if policy.action not in {"PASS", "STEP_UP", "REVIEW"}:
         raise ValueError("scored policy action must be one of PASS, STEP_UP, or REVIEW")
 
