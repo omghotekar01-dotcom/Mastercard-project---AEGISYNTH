@@ -190,20 +190,12 @@ def test_compiler_rejects_non_numeric_false_positive_budgets(invalid_budget):
         DefenceCompiler(max_fpr=invalid_budget)
 
 
-@pytest.mark.parametrize("invalid_generation", [True, False, -1, 1.0, "1", None])
+@pytest.mark.parametrize("invalid_generation", [True, False, -1, 0, 9, 1.0, "1", None])
 def test_compiler_rejects_malformed_policy_generations(invalid_generation):
     benign, attacks = fixture_world()
 
-    with pytest.raises(ValueError, match=r"generation must be a non-negative integer"):
+    with pytest.raises(ValueError, match=r"generation must be an integer within \[1, 8\]"):
         DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=invalid_generation)
-
-
-def test_compiler_accepts_zero_generation_with_stable_policy_identity():
-    benign, attacks = fixture_world()
-
-    policy = DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=0)
-
-    assert policy.policy_id.startswith("ZD-00-")
 
 
 def test_policy_identity_changes_when_any_semantic_threshold_changes():
