@@ -14,9 +14,19 @@ def _policy(policy_id: str) -> Policy:
     )
 
 
-@pytest.mark.parametrize("policy_id", [" ZD-01-58-58", "ZD-01-58-58 ", "\tZD-01-58-58\n"])
-def test_policy_schema_rejects_surrounding_identity_whitespace(policy_id: str) -> None:
-    with pytest.raises(ValidationError, match="policy_id must not contain surrounding whitespace"):
+@pytest.mark.parametrize(
+    "policy_id",
+    [
+        " ZD-01-58-58",
+        "ZD-01-58-58 ",
+        "\tZD-01-58-58\n",
+        "ZD-01-58 58",
+        "ZD-01-58\t58",
+        "ZD-01-58\n58",
+    ],
+)
+def test_policy_schema_rejects_identity_whitespace(policy_id: str) -> None:
+    with pytest.raises(ValidationError, match="policy_id must not contain whitespace"):
         _policy(policy_id)
 
 
