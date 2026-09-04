@@ -59,6 +59,14 @@ def _is_real_number(value: object) -> bool:
     return not isinstance(value, bool) and isinstance(value, (int, float))
 
 
+def _validate_max_fpr(value: object) -> None:
+    """Keep the live compiler budget inside the same safe domain enforced at construction."""
+    if not _is_real_number(value):
+        raise ValueError("max_fpr must be a real numeric value")
+    if not math.isfinite(value) or not 0 <= value <= 1:
+        raise ValueError("max_fpr must be finite and within [0, 1]")
+
+
 def _validate_policy_definition(policy: Policy) -> None:
     """Fail closed if a schema-bypassed policy could distort scoring or exceed safe actions."""
     if not isinstance(policy.policy_id, str) or not policy.policy_id.strip():
@@ -207,13 +215,11 @@ class DefenceCompiler:
     """Searches a compact policy space for the best safe generalization."""
 
     def __init__(self, max_fpr: float = 0.02):
-        if not _is_real_number(max_fpr):
-            raise ValueError("max_fpr must be a real numeric value")
-        if not math.isfinite(max_fpr) or not 0 <= max_fpr <= 1:
-            raise ValueError("max_fpr must be finite and within [0, 1]")
+        _validate_max_fpr(max_fpr)
         self.max_fpr = max_fpr
 
     def synthesize(self, benign: list[Transaction], attacks: list[Transaction], generation: int) -> Policy:
+        _validate_max_fpr(self.max_fpr)
         if isinstance(generation, bool) or not isinstance(generation, int) or not 1 <= generation <= 8:
             raise ValueError("generation must be an integer within [1, 8]")
         _validate_evaluation_populations(benign, attacks)
