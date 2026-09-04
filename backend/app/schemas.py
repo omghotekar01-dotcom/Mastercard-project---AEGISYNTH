@@ -39,6 +39,20 @@ class Transaction(BaseModel):
     label: int = Field(ge=0, le=1, strict=True)
     attack_family: str = Field(default="benign", min_length=1, max_length=64)
 
+    @field_validator("tx_id")
+    @classmethod
+    def require_canonical_transaction_id(cls, value: str) -> str:
+        if any(char.isspace() for char in value):
+            raise ValueError("tx_id must not contain whitespace")
+        return value
+
+    @field_validator("attack_family")
+    @classmethod
+    def require_canonical_transaction_family(cls, value: str) -> str:
+        if any(char.isspace() for char in value):
+            raise ValueError("attack_family must not contain whitespace")
+        return value
+
     @field_validator(
         "amount",
         "merchant_age_hours",
@@ -52,6 +66,14 @@ class Transaction(BaseModel):
     @classmethod
     def reject_boolean_numeric_features(cls, value: object) -> object:
         return _reject_boolean_numeric_input(value)
+
+    @model_validator(mode="after")
+    def require_consistent_transaction_provenance(self) -> "Transaction":
+        if self.label == 0 and self.attack_family != "benign":
+            raise ValueError("benign transactions must use the benign attack_family provenance label")
+        if self.label == 1 and self.attack_family == "benign":
+            raise ValueError("attack transactions must identify a non-benign attack_family")
+        return self
 
 
 class Policy(BaseModel):
