@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 try:
-    from z3 import And, Real, Solver, sat
+    from z3 import And, Real, Solver, sat, unsat
     HAS_Z3 = True
 except ImportError:  # production requirements install z3-solver; verification fails closed without it
     HAS_Z3 = False
@@ -135,8 +135,10 @@ def verify_policy(
     except Exception:
         return False, ["Formal verification failed closed: Z3 runtime error"]
 
-    if solver_result != sat:
+    if solver_result == unsat:
         return False, ["Policy conditions are unsatisfiable"]
+    if solver_result != sat:
+        return False, ["Formal verification inconclusive: Z3 did not return sat or unsat"]
     formal_note = "Z3: policy is satisfiable over valid payment-feature domains."
 
     notes.extend(
