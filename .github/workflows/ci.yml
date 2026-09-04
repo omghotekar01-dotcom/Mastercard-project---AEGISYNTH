@@ -35,6 +35,28 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
+      - name: Guard exact backend dependency declarations
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          requirement = re.compile(r"^[A-Za-z0-9_.-]+(?:\[[A-Za-z0-9_,.-]+\])?==[^=<>!~\s]+$")
+          violations = []
+          for line_no, raw in enumerate(Path("requirements.txt").read_text().splitlines(), start=1):
+              line = raw.strip()
+              if not line or line.startswith("#"):
+                  continue
+              if not requirement.fullmatch(line):
+                  violations.append(f"line {line_no}: {line}")
+
+          if violations:
+              raise SystemExit(
+                  "Backend dependency declarations must use exact == pins:\n" + "\n".join(violations)
+              )
+          print("backend direct dependency declarations are exact")
+          PY
+
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
 
