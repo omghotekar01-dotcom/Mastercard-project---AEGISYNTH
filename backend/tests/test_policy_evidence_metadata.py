@@ -116,3 +116,37 @@ def test_compiler_rejects_malformed_transaction_ids_before_identity_set_logic(ba
         match=r"benign evaluation transaction must have a non-empty string tx_id",
     ):
         DefenceCompiler().synthesize(benign, attacks, generation=1)
+
+
+@pytest.mark.parametrize("bad_tx_id", [" B-1", "B-1 ", "B 1", "B\t1", "B\n1"])
+def test_compiler_rejects_whitespace_in_schema_bypassed_transaction_ids(bad_tx_id):
+    benign, attacks = _populations()
+    benign[0].__dict__["tx_id"] = bad_tx_id
+
+    with pytest.raises(
+        ValueError,
+        match=r"benign evaluation transaction tx_id must not contain whitespace",
+    ):
+        DefenceCompiler().synthesize(benign, attacks, generation=1)
+
+
+def test_compiler_rejects_overlength_schema_bypassed_transaction_ids():
+    benign, attacks = _populations()
+    benign[0].__dict__["tx_id"] = "B" * 65
+
+    with pytest.raises(
+        ValueError,
+        match=r"benign evaluation transaction tx_id must be at most 64 characters",
+    ):
+        DefenceCompiler().synthesize(benign, attacks, generation=1)
+
+
+def test_compiler_rejects_whitespace_alias_before_overlap_detection():
+    benign, attacks = _populations()
+    benign[0].__dict__["tx_id"] = "A-1 "
+
+    with pytest.raises(
+        ValueError,
+        match=r"benign evaluation transaction tx_id must not contain whitespace",
+    ):
+        DefenceCompiler().synthesize(benign, attacks, generation=1)
