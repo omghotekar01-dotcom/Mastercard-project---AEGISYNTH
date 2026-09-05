@@ -62,6 +62,17 @@ def test_baseline_attack_success_rejects_empty_population():
         AegisynthEngine._baseline_attack_success([])
 
 
+@pytest.mark.parametrize("seed", [-1, True, 42.0, "42", None])
+def test_engine_rejects_noncanonical_benchmark_seeds(seed):
+    with pytest.raises(ValueError, match="seed must be a non-negative integer"):
+        AegisynthEngine(seed=seed)
+
+
+def test_engine_accepts_zero_seed_and_preserves_it_in_result():
+    result = AegisynthEngine(seed=0).run(generations=1)
+    assert result.seed == 0
+
+
 @pytest.mark.parametrize("generations", [0, 9, True, 2.0, "4", None])
 def test_engine_rejects_unsupported_generation_counts(generations):
     with pytest.raises(ValueError, match=r"generations must be an integer within \[1, 8\]"):
