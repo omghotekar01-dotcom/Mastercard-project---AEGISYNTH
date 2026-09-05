@@ -90,15 +90,24 @@ jobs:
       - name: Verify deterministic benchmark contract
         run: |
           python - <<'PY'
+          import json
+          from pathlib import Path
+
           from app.engine import AegisynthEngine
-          r = AegisynthEngine(seed=42).run(generations=4)
-          assert r.baseline_attack_success_rate == 0.5383
-          assert r.final_attack_success_rate == 0.0743
-          assert r.metrics.final_fraud_coverage == 0.9257
-          assert r.metrics.benign_acceptance_rate == 0.9943
+
+          expected = json.loads(Path("../submission/benchmark_seed42.json").read_text())
+          r = AegisynthEngine(seed=expected["seed"]).run(generations=expected["generations"])
+
+          assert r.seed == expected["seed"]
+          assert r.attack_family == expected["attack_family"]
+          assert r.baseline_attack_success_rate == expected["baseline_attack_success_rate"]
+          assert r.final_attack_success_rate == expected["final_attack_success_rate"]
+          assert r.metrics.final_fraud_coverage == expected["final_fraud_family_coverage"]
+          assert r.metrics.final_false_positive_rate == expected["final_false_positive_rate"]
+          assert r.metrics.benign_acceptance_rate == expected["benign_acceptance_rate"]
           assert r.final_policy.verified
           assert r.final_policy.action in {"STEP_UP", "REVIEW"}
-          print("benchmark contract verified")
+          print("submitted benchmark artifact contract verified")
           PY
 
   frontend:
