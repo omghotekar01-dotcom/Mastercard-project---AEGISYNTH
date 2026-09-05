@@ -8,8 +8,8 @@ from fastapi.staticfiles import StaticFiles
 
 from .artifact import build_review_package, verify_review_package
 from .engine import AegisynthEngine
-from .schemas import LabResult, ReviewPackage
-from .verification import HAS_Z3
+from .schemas import LabResult, Policy, ReviewPackage
+from .verification import HAS_Z3, verify_policy
 
 APP_VERSION = "1.4.0"
 BENCHMARK_SEED = 42
@@ -45,6 +45,26 @@ def _benchmark() -> LabResult:
     )
 
 
+def _formal_verifier_operational() -> bool:
+    """Exercise the real verifier, not merely the Z3 import path, for runtime readiness."""
+    if not HAS_Z3:
+        return False
+    canary = Policy(
+        policy_id="readiness-canary",
+        merchant_age_max=720.0,
+        first_time_card_ratio_min=0.5,
+        settlement_change_days_max=30.0,
+        temporal_burst_score_min=0.5,
+        action="STEP_UP",
+        fraud_coverage=0.9,
+        false_positive_rate=0.01,
+        estimated_latency_ms=1.0,
+        counterexamples_remaining=0,
+    )
+    ok, _notes = verify_policy(canary)
+    return ok
+
+
 @app.get("/health")
 def health():
     """Liveness only: confirms the API process is running."""
@@ -54,9 +74,11 @@ def health():
 @app.get("/ready")
 def ready(response: Response):
     """Fail-closed readiness gate for capabilities promised by the demo."""
+    verifier_operational = _formal_verifier_operational()
     checks = {
         "dashboard_present": (STATIC_DIR / "index.html").exists(),
         "z3_formal_verifier_available": HAS_Z3,
+        "z3_formal_verifier_operational": verifier_operational,
     }
     is_ready = all(checks.values())
     if not is_ready:
@@ -66,7 +88,7 @@ def ready(response: Response):
         "service": "aegisynth",
         "version": APP_VERSION,
         "checks": checks,
-        "formal_verifier": "z3" if HAS_Z3 else "unavailable",
+        "formal_verifier": "z3" if verifier_operational else "unavailable",
         "scope": "synthetic defensive payment-security laboratory",
     }
 
@@ -100,6 +122,7 @@ def self_check(response: Response):
     """Return a non-success status when any runtime contract check fails."""
     result = _benchmark()
     package = build_review_package(result)
+    verifier_operational = _formal_verifier_operational()
     checks = {
         "benchmark_seed": result.seed == BENCHMARK_SEED,
         "attack_family": result.attack_family == ATTACK_FAMILY,
@@ -120,6 +143,7 @@ def self_check(response: Response):
         "artifact_integrity": verify_review_package(package),
         "dashboard_present": (STATIC_DIR / "index.html").exists(),
         "z3_formal_verifier_available": HAS_Z3,
+        "z3_formal_verifier_operational": verifier_operational,
     }
     checks_pass = all(checks.values())
     if not checks_pass:
