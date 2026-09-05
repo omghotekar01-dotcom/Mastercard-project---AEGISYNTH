@@ -3,6 +3,8 @@ import math
 import random
 from .schemas import Transaction
 
+SUPPORTED_ATTACK_FAMILIES = frozenset({"ghost_merchant_swarm"})
+
 
 def _require_seed(value: object) -> int:
     """Keep RNG initialization inside the same non-negative seed domain exposed by results."""
@@ -28,13 +30,18 @@ def _require_hardness(value: object) -> float:
 
 
 def _require_attack_family(value: object) -> str:
-    """Require canonical synthetic-family provenance before benchmark RNG state advances."""
+    """Require an actually implemented synthetic family before benchmark RNG state advances."""
     if not isinstance(value, str) or not value or len(value) > 64:
         raise ValueError("attack family must be a non-empty string of at most 64 characters")
     if any(char.isspace() for char in value):
         raise ValueError("attack family must not contain whitespace")
     if value == "benign":
         raise ValueError("attack family must not use the reserved benign provenance label")
+    if value not in SUPPORTED_ATTACK_FAMILIES:
+        raise ValueError(
+            "unsupported synthetic attack family; supported families: "
+            + ", ".join(sorted(SUPPORTED_ATTACK_FAMILIES))
+        )
     return value
 
 
