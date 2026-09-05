@@ -74,9 +74,27 @@ def test_runtime_self_check_passes_all_contracts():
     data = res.json()
     assert data['status'] == 'pass'
     assert data['checks']
+    assert data['checks']['attack_family'] is True
+    assert data['checks']['generation_count'] is True
+    assert data['checks']['artifact_seed'] is True
+    assert data['checks']['artifact_attack_family'] is True
+    assert data['checks']['artifact_generation_count'] is True
     assert data['checks']['z3_formal_verifier_available'] is True
     assert all(data['checks'].values())
     assert 'synthetic' in data['scope'].lower()
+
+
+def test_runtime_self_check_fails_closed_on_generation_provenance_drift(monkeypatch):
+    benchmark = main_module._benchmark()
+    monkeypatch.setattr(main_module, '_benchmark', lambda: benchmark)
+    monkeypatch.setattr(main_module, 'BENCHMARK_GENERATIONS', len(benchmark.iterations) - 1)
+
+    res = client.get('/api/v1/self-check')
+    assert res.status_code == 503
+    data = res.json()
+    assert data['status'] == 'fail'
+    assert data['checks']['generation_count'] is False
+    assert data['checks']['artifact_generation_count'] is False
 
 
 def test_runtime_self_check_fails_closed_without_formal_verifier(monkeypatch):

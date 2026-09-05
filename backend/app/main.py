@@ -102,6 +102,8 @@ def self_check(response: Response):
     package = build_review_package(result)
     checks = {
         "benchmark_seed": result.seed == BENCHMARK_SEED,
+        "attack_family": result.attack_family == ATTACK_FAMILY,
+        "generation_count": len(result.iterations) == BENCHMARK_GENERATIONS,
         "baseline_attack_success": result.baseline_attack_success_rate == BENCHMARK_CONTRACT["baseline_attack_success_rate"],
         "final_attack_success": result.final_attack_success_rate == BENCHMARK_CONTRACT["final_attack_success_rate"],
         "fraud_coverage": result.metrics.final_fraud_coverage == BENCHMARK_CONTRACT["final_fraud_coverage"],
@@ -111,6 +113,9 @@ def self_check(response: Response):
         "false_positive_budget": result.final_policy.false_positive_rate <= 0.02,
         "human_approval_required": package.approval_status == "HUMAN_APPROVAL_REQUIRED",
         "not_auto_deployed": package.deployment_status == "NOT_DEPLOYED",
+        "artifact_seed": package.seed == BENCHMARK_SEED,
+        "artifact_attack_family": package.attack_family == ATTACK_FAMILY,
+        "artifact_generation_count": package.provenance.generation_count == BENCHMARK_GENERATIONS,
         "artifact_fingerprint": len(package.artifact_sha256) == 64,
         "artifact_integrity": verify_review_package(package),
         "dashboard_present": (STATIC_DIR / "index.html").exists(),
