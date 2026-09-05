@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from itertools import product
 from .schemas import Policy, Transaction
+from .simulator import SUPPORTED_ATTACK_FAMILIES
 
 FEATURES = (
     "merchant_age_hours",
@@ -143,6 +144,11 @@ def _validate_evidence_metadata(tx: Transaction, population: str, expected_label
         raise ValueError("benign evaluation population must use the benign attack_family provenance label")
     if expected_label == 1 and tx.attack_family == "benign":
         raise ValueError("attack evaluation population must not use the benign attack_family provenance label")
+    if expected_label == 1 and tx.attack_family not in SUPPORTED_ATTACK_FAMILIES:
+        raise ValueError(
+            "attack evaluation population contains an unsupported synthetic attack family; "
+            "supported families: " + ", ".join(sorted(SUPPORTED_ATTACK_FAMILIES))
+        )
 
 
 def _duplicate_tx_ids(rows: list[Transaction]) -> set[str]:
