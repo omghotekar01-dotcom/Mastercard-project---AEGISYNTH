@@ -15,6 +15,7 @@ ALLOWED_ACTIONS = {"PASS", "STEP_UP", "REVIEW"}
 DEFAULT_MAX_POLICY_LATENCY_MS = 5.0
 DEFAULT_Z3_TIMEOUT_MS = 1000
 _CANONICAL_POLICY_ID = re.compile(r"^[A-Za-z0-9._-]+$")
+_COMPILER_POLICY_ID = re.compile(r"^ZD-(\d{2})-(\d{3})-(\d{2})-(\d{2})-(\d{2})$")
 
 
 def _is_real_number(value: object) -> bool:
@@ -43,6 +44,44 @@ def _validate_policy_identity(policy: Policy) -> tuple[bool, list[str]]:
     if _CANONICAL_POLICY_ID.fullmatch(policy.policy_id) is None:
         return False, [
             "Policy identity invalid: policy_id may contain only ASCII letters, digits, '.', '_', and '-'"
+        ]
+    return True, []
+
+
+def _validate_compiler_identity_binding(policy: Policy) -> tuple[bool, list[str]]:
+    """Bind compiler-style ZD identities to the threshold semantics they encode.
+
+    Generic external policy IDs remain supported, but any ID claiming compiler lineage via
+    the ``ZD-`` prefix must use the compiler's exact identity layout and must describe the
+    actual policy thresholds presented to the verifier. This prevents a policy artifact from
+    being mutated after synthesis while retaining an audit identity for different semantics.
+    """
+    if not policy.policy_id.startswith("ZD-"):
+        return True, []
+
+    match = _COMPILER_POLICY_ID.fullmatch(policy.policy_id)
+    if match is None:
+        return False, ["Compiler policy identity invalid: malformed ZD policy_id"]
+
+    generation, age, card_percent, settle, burst_percent = (int(value) for value in match.groups())
+    if not 1 <= generation <= 8:
+        return False, ["Compiler policy identity invalid: generation must be within [1, 8]"]
+
+    expected = (
+        float(age),
+        card_percent / 100,
+        float(settle),
+        burst_percent / 100,
+    )
+    actual = (
+        float(policy.merchant_age_max),
+        float(policy.first_time_card_ratio_min),
+        float(policy.settlement_change_days_max),
+        float(policy.temporal_burst_score_min),
+    )
+    if actual != expected:
+        return False, [
+            "Compiler policy identity mismatch: ZD policy_id does not encode the verified thresholds"
         ]
     return True, []
 
@@ -109,6 +148,10 @@ def verify_policy(
     policy_numbers_ok, policy_number_notes = _validate_policy_numeric_fields(policy)
     if not policy_numbers_ok:
         return False, policy_number_notes
+
+    compiler_identity_ok, compiler_identity_notes = _validate_compiler_identity_binding(policy)
+    if not compiler_identity_ok:
+        return False, compiler_identity_notes
 
     notes: list[str] = []
     if policy.false_positive_rate > max_fpr:
