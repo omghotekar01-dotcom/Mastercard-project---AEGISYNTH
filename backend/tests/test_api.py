@@ -17,6 +17,7 @@ def test_health_readiness_and_dashboard():
     assert ready_data['status'] == 'ready'
     assert ready_data['checks']['dashboard_present'] is True
     assert ready_data['checks']['z3_formal_verifier_available'] is True
+    assert ready_data['checks']['z3_formal_verifier_operational'] is True
     assert ready_data['formal_verifier'] == 'z3'
 
     page = client.get('/')
@@ -31,6 +32,21 @@ def test_readiness_fails_closed_without_formal_verifier(monkeypatch):
     data = res.json()
     assert data['status'] == 'not_ready'
     assert data['checks']['z3_formal_verifier_available'] is False
+    assert data['checks']['z3_formal_verifier_operational'] is False
+    assert data['formal_verifier'] == 'unavailable'
+
+
+def test_readiness_fails_closed_when_formal_verifier_runtime_breaks(monkeypatch):
+    monkeypatch.setattr(main_module, 'HAS_Z3', True)
+    monkeypatch.setattr(main_module, 'verify_policy', lambda _policy: (False, ['runtime failure']))
+
+    res = client.get('/ready')
+
+    assert res.status_code == 503
+    data = res.json()
+    assert data['status'] == 'not_ready'
+    assert data['checks']['z3_formal_verifier_available'] is True
+    assert data['checks']['z3_formal_verifier_operational'] is False
     assert data['formal_verifier'] == 'unavailable'
 
 
@@ -42,6 +58,7 @@ def test_readiness_fails_closed_without_dashboard(monkeypatch, tmp_path):
     assert data['status'] == 'not_ready'
     assert data['checks']['dashboard_present'] is False
     assert data['checks']['z3_formal_verifier_available'] is True
+    assert data['checks']['z3_formal_verifier_operational'] is True
     assert data['formal_verifier'] == 'z3'
 
 
@@ -80,6 +97,7 @@ def test_runtime_self_check_passes_all_contracts():
     assert data['checks']['artifact_attack_family'] is True
     assert data['checks']['artifact_generation_count'] is True
     assert data['checks']['z3_formal_verifier_available'] is True
+    assert data['checks']['z3_formal_verifier_operational'] is True
     assert all(data['checks'].values())
     assert 'synthetic' in data['scope'].lower()
 
@@ -104,6 +122,20 @@ def test_runtime_self_check_fails_closed_without_formal_verifier(monkeypatch):
     data = res.json()
     assert data['status'] == 'fail'
     assert data['checks']['z3_formal_verifier_available'] is False
+    assert data['checks']['z3_formal_verifier_operational'] is False
+
+
+def test_runtime_self_check_fails_closed_when_formal_verifier_runtime_breaks(monkeypatch):
+    monkeypatch.setattr(main_module, 'HAS_Z3', True)
+    monkeypatch.setattr(main_module, 'verify_policy', lambda _policy: (False, ['runtime failure']))
+
+    res = client.get('/api/v1/self-check')
+
+    assert res.status_code == 503
+    data = res.json()
+    assert data['status'] == 'fail'
+    assert data['checks']['z3_formal_verifier_available'] is True
+    assert data['checks']['z3_formal_verifier_operational'] is False
 
 
 def test_lab_api_schema():
