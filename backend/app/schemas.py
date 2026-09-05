@@ -168,6 +168,13 @@ class IterationResult(BaseModel):
             raise ValueError("counterexamples must equal trace.escaped_count")
         if self.candidate.counterexamples_remaining != self.counterexamples:
             raise ValueError("candidate.counterexamples_remaining must equal counterexamples")
+        if self.attack_success_rate != self.trace.escaped_rate:
+            raise ValueError("attack_success_rate must equal trace.escaped_rate")
+        expected_from_coverage = round(1 - self.candidate.fraud_coverage, 4)
+        if self.attack_success_rate != expected_from_coverage:
+            raise ValueError(
+                "attack_success_rate must equal one minus candidate.fraud_coverage rounded to 4 decimals"
+            )
         return self
 
 
