@@ -12,6 +12,7 @@ from .schemas import Policy
 
 ALLOWED_ACTIONS = {"PASS", "STEP_UP", "REVIEW"}
 DEFAULT_MAX_POLICY_LATENCY_MS = 5.0
+DEFAULT_Z3_TIMEOUT_MS = 1000
 
 
 def _is_real_number(value: object) -> bool:
@@ -123,6 +124,7 @@ def verify_policy(
         settle = Real("settle")
         burst = Real("burst")
         solver = Solver()
+        solver.set(timeout=DEFAULT_Z3_TIMEOUT_MS)
         solver.add(And(age >= 0, age <= 24 * 365 * 20))
         solver.add(And(card >= 0, card <= 1))
         solver.add(And(settle >= 0, settle <= 3650))
