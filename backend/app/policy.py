@@ -1,5 +1,6 @@
 from __future__ import annotations
 import math
+import re
 from dataclasses import dataclass
 from decimal import Decimal
 from itertools import product
@@ -12,6 +13,7 @@ FEATURES = (
     "settlement_change_days",
     "temporal_burst_score",
 )
+_CANONICAL_POLICY_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 
 @dataclass
 class Score:
@@ -74,8 +76,10 @@ def _validate_policy_definition(policy: Policy) -> None:
         raise ValueError("scored policy must have a non-empty string policy_id")
     if len(policy.policy_id) > 80:
         raise ValueError("scored policy policy_id must be at most 80 characters")
-    if any(char.isspace() for char in policy.policy_id):
-        raise ValueError("scored policy policy_id must not contain whitespace")
+    if _CANONICAL_POLICY_ID.fullmatch(policy.policy_id) is None:
+        raise ValueError(
+            "scored policy policy_id may contain only ASCII letters, digits, '.', '_', and '-'"
+        )
     if not isinstance(policy.action, str):
         raise ValueError("scored policy action must be a string")
     if policy.action not in {"PASS", "STEP_UP", "REVIEW"}:
