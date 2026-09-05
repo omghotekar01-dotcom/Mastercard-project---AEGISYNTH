@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import re
 
 try:
     from z3 import And, Real, Solver, sat, unsat
@@ -13,6 +14,7 @@ from .schemas import Policy
 ALLOWED_ACTIONS = {"PASS", "STEP_UP", "REVIEW"}
 DEFAULT_MAX_POLICY_LATENCY_MS = 5.0
 DEFAULT_Z3_TIMEOUT_MS = 1000
+_CANONICAL_POLICY_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 
 
 def _is_real_number(value: object) -> bool:
@@ -33,13 +35,15 @@ def _validate_budgets(max_fpr: float, max_latency_ms: float) -> tuple[bool, list
 
 
 def _validate_policy_identity(policy: Policy) -> tuple[bool, list[str]]:
-    """Require the schema's durable policy identity contract at the verification boundary."""
+    """Require a durable, ASCII-safe policy identity at the verification boundary."""
     if not isinstance(policy.policy_id, str) or not policy.policy_id.strip():
         return False, ["Policy identity invalid: policy_id must be a non-empty string"]
     if len(policy.policy_id) > 80:
         return False, ["Policy identity invalid: policy_id must be at most 80 characters"]
-    if any(char.isspace() for char in policy.policy_id):
-        return False, ["Policy identity invalid: policy_id must not contain whitespace"]
+    if _CANONICAL_POLICY_ID.fullmatch(policy.policy_id) is None:
+        return False, [
+            "Policy identity invalid: policy_id may contain only ASCII letters, digits, '.', '_', and '-'"
+        ]
     return True, []
 
 
