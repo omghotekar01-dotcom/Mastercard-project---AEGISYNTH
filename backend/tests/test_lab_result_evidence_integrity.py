@@ -69,6 +69,13 @@ def test_lab_result_rejects_contradictory_final_metrics(metric, replacement, mes
         LabResult.model_validate(payload)
 
 
+def test_engine_lab_result_contains_only_verified_policy_evidence():
+    result = AegisynthEngine(seed=42).run(generations=3)
+
+    assert result.final_policy.verified is True
+    assert all(item.candidate.verified is True for item in result.iterations)
+
+
 def test_current_engine_lab_result_remains_valid():
     result = AegisynthEngine(seed=42).run(generations=2)
     assert LabResult.model_validate(result.model_dump()) == result
