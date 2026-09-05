@@ -1,6 +1,7 @@
 from __future__ import annotations
+import math
 from .schemas import LabResult, IterationResult, Policy, CounterexampleTrace
-from .simulator import PaymentWorld
+from .simulator import PaymentWorld, SUPPORTED_ATTACK_FAMILIES
 from .policy import DefenceCompiler, score_policy, matches
 from .verification import verify_policy
 
@@ -11,9 +12,36 @@ class AegisynthEngine:
 
     @staticmethod
     def _baseline_attack_success(attacks) -> float:
-        """Compute baseline ASR only from a real, non-empty attack population."""
+        """Compute baseline ASR only from valid, independent synthetic attack evidence."""
         if not attacks:
             raise ValueError("baseline attack population must not be empty")
+
+        seen_ids: set[str] = set()
+        for tx in attacks:
+            if not isinstance(tx.tx_id, str) or not tx.tx_id.strip():
+                raise ValueError("baseline attack evidence must have a non-empty string tx_id")
+            if tx.tx_id in seen_ids:
+                raise ValueError("baseline attack evidence must not contain duplicate tx_id values")
+            seen_ids.add(tx.tx_id)
+
+            if type(tx.label) is not int or tx.label != 1:
+                raise ValueError("baseline attack evidence must contain only label=1 integer transactions")
+            if tx.attack_family not in SUPPORTED_ATTACK_FAMILIES:
+                raise ValueError(
+                    "baseline attack evidence contains an unsupported synthetic attack family"
+                )
+
+            feature_bounds = {
+                "merchant_age_hours": (0.0, float(24 * 365 * 20)),
+                "temporal_burst_score": (0.0, 1.0),
+            }
+            for feature, (minimum, maximum) in feature_bounds.items():
+                value = getattr(tx, feature)
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    raise ValueError(f"baseline attack evidence has non-numeric {feature}")
+                if not math.isfinite(value) or not minimum <= value <= maximum:
+                    raise ValueError(f"baseline attack evidence has invalid {feature}")
+
         caught = sum(
             (tx.merchant_age_hours < 48 and tx.temporal_burst_score > 0.82)
             for tx in attacks
