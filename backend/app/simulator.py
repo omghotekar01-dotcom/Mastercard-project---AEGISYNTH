@@ -18,10 +18,12 @@ def _require_positive_count(name: str, value: object) -> int:
     return value
 
 
-def _require_finite_hardness(value: object) -> float:
-    """Reject non-numeric or non-finite mutation inputs before benchmark RNG state advances."""
+def _require_hardness(value: object) -> float:
+    """Reject out-of-domain mutation inputs before benchmark RNG state advances."""
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
-        raise ValueError("hardness must be a finite number")
+        raise ValueError("hardness must be a finite number within [0, 1]")
+    if not 0 <= value <= 1:
+        raise ValueError("hardness must be a finite number within [0, 1]")
     return float(value)
 
 
@@ -73,7 +75,7 @@ class PaymentWorld:
         """Generate a safe, fictional attack family. Hardness mutates values toward benign ranges."""
         n = _require_positive_count("attack sample count", n)
         family = _require_attack_family(family)
-        h = self._clip(_require_finite_hardness(hardness))
+        h = _require_hardness(hardness)
         rows: list[Transaction] = []
         start = self._attack_seq
         for i in range(n):
@@ -97,5 +99,5 @@ class PaymentWorld:
         # partially consume RNG state and break retry reproducibility.
         _require_positive_count("benign sample count", benign_n)
         _require_positive_count("attack sample count", attack_n)
-        _require_finite_hardness(hardness)
+        _require_hardness(hardness)
         return self.benign(benign_n), self.attack(attack_n, hardness=hardness)
