@@ -71,6 +71,17 @@ def test_scoring_rejects_benign_row_with_attack_provenance():
         score_policy(_policy(), benign, attacks)
 
 
+def test_scoring_rejects_unimplemented_attack_family_provenance():
+    benign, attacks = _populations()
+    attacks[0].__dict__["attack_family"] = "unimplemented_family"
+
+    with pytest.raises(
+        ValueError,
+        match=r"attack evaluation population contains an unsupported synthetic attack family",
+    ):
+        score_policy(_policy(), benign, attacks)
+
+
 def test_scoring_accepts_canonical_population_provenance():
     benign, attacks = _populations()
 
