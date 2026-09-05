@@ -7,8 +7,15 @@ from .verification import verify_policy
 
 class AegisynthEngine:
     def __init__(self, seed: int = 42, max_fpr: float = 0.02):
-        self.seed = seed
+        self.seed = self._validate_seed(seed)
         self.max_fpr = max_fpr
+
+    @staticmethod
+    def _validate_seed(seed: object) -> int:
+        """Require canonical non-negative integer seeds before any benchmark RNG is created."""
+        if type(seed) is not int or seed < 0:
+            raise ValueError("seed must be a non-negative integer")
+        return seed
 
     @staticmethod
     def _baseline_attack_success(attacks) -> float:
