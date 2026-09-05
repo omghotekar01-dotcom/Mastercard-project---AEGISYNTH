@@ -18,7 +18,7 @@ jobs:
   backend:
     name: Backend tests
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: backend
@@ -76,7 +76,7 @@ jobs:
           retention-days: 14
 
       - name: Run test suite
-        run: python -m pytest -q --junitxml=pytest-report.xml
+        run: python -m pytest -q --durations=20 --junitxml=pytest-report.xml
 
       - name: Preserve backend test report
         if: always()
