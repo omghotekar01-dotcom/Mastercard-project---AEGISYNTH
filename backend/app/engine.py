@@ -1,9 +1,13 @@
 from __future__ import annotations
 import math
+import re
 from .schemas import LabResult, IterationResult, Policy, CounterexampleTrace
 from .simulator import PaymentWorld, SUPPORTED_ATTACK_FAMILIES
 from .policy import DefenceCompiler, score_policy, matches
 from .verification import verify_policy
+
+_CANONICAL_TX_ID = re.compile(r"^[A-Za-z0-9._-]+$")
+
 
 class AegisynthEngine:
     def __init__(self, seed: int = 42, max_fpr: float = 0.02):
@@ -27,6 +31,12 @@ class AegisynthEngine:
         for tx in attacks:
             if not isinstance(tx.tx_id, str) or not tx.tx_id.strip():
                 raise ValueError("baseline attack evidence must have a non-empty string tx_id")
+            if len(tx.tx_id) > 64:
+                raise ValueError("baseline attack evidence tx_id must be at most 64 characters")
+            if _CANONICAL_TX_ID.fullmatch(tx.tx_id) is None:
+                raise ValueError(
+                    "baseline attack evidence tx_id may contain only ASCII letters, digits, '.', '_', and '-'"
+                )
             if tx.tx_id in seen_ids:
                 raise ValueError("baseline attack evidence must not contain duplicate tx_id values")
             seen_ids.add(tx.tx_id)
