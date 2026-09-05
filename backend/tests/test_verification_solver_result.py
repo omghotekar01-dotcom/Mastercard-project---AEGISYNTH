@@ -19,6 +19,11 @@ def _valid_policy() -> Policy:
 
 def test_verify_policy_reports_unsat_only_for_explicit_unsat(monkeypatch):
     class UnsatSolver:
+        configured_timeout = None
+
+        def set(self, *, timeout):
+            type(self).configured_timeout = timeout
+
         def add(self, *_args):
             return None
 
@@ -31,6 +36,7 @@ def test_verify_policy_reports_unsat_only_for_explicit_unsat(monkeypatch):
 
     assert ok is False
     assert notes == ["Policy conditions are unsatisfiable"]
+    assert UnsatSolver.configured_timeout == verification_module.DEFAULT_Z3_TIMEOUT_MS
 
 
 def test_verify_policy_fails_closed_and_distinguishes_inconclusive_z3_result(monkeypatch):
@@ -38,6 +44,11 @@ def test_verify_policy_fails_closed_and_distinguishes_inconclusive_z3_result(mon
         pass
 
     class InconclusiveSolver:
+        configured_timeout = None
+
+        def set(self, *, timeout):
+            type(self).configured_timeout = timeout
+
         def add(self, *_args):
             return None
 
@@ -51,3 +62,17 @@ def test_verify_policy_fails_closed_and_distinguishes_inconclusive_z3_result(mon
     assert ok is False
     assert notes == ["Formal verification inconclusive: Z3 did not return sat or unsat"]
     assert "unsatisfiable" not in notes[0].lower()
+    assert InconclusiveSolver.configured_timeout == verification_module.DEFAULT_Z3_TIMEOUT_MS
+
+
+def test_verify_policy_fails_closed_if_solver_timeout_configuration_errors(monkeypatch):
+    class TimeoutConfigurationFailureSolver:
+        def set(self, *, timeout):
+            raise RuntimeError(f"cannot configure timeout {timeout}")
+
+    monkeypatch.setattr(verification_module, "Solver", TimeoutConfigurationFailureSolver)
+
+    ok, notes = verification_module.verify_policy(_valid_policy())
+
+    assert ok is False
+    assert notes == ["Formal verification failed closed: Z3 runtime error"]
