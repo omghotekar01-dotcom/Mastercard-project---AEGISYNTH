@@ -6,6 +6,7 @@ import hmac
 import json
 
 from .schemas import CompilationProvenance, LabResult, ReviewPackage
+from .simulator import SUPPORTED_ATTACK_FAMILIES
 from .verification import (
     DEFAULT_MAX_POLICY_LATENCY_MS,
     HAS_Z3,
@@ -173,8 +174,11 @@ def _validate_result_for_review(
 
     Review-package provenance declares the Z3 verifier and explicit business budgets.
     Packaging therefore fails closed if Z3 is unavailable, if the final policy no longer
-    satisfies those budgets, or if the stored verification evidence is stale/tampered.
+    satisfies those budgets, if the claimed attack family has no implemented generator,
+    or if the stored verification evidence is stale/tampered.
     """
+    if result.attack_family not in SUPPORTED_ATTACK_FAMILIES:
+        raise ValueError("Review package requires an implemented synthetic attack family")
     _validate_result_consistency(result)
 
     if not HAS_Z3:
@@ -260,6 +264,7 @@ def _has_supported_review_contract(package: ReviewPackage) -> bool:
     """Fail closed unless the handoff matches the currently supported safe contract."""
     return (
         package.package_version == REVIEW_PACKAGE_VERSION
+        and package.attack_family in SUPPORTED_ATTACK_FAMILIES
         and package.provenance.compiler_id == COMPILER_ID
         and package.provenance.verifier_id == VERIFIER_ID
         and package.provenance.max_false_positive_rate == DEFAULT_MAX_FPR
