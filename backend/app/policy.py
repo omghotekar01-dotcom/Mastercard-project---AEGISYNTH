@@ -15,6 +15,7 @@ FEATURES = (
 )
 _CANONICAL_POLICY_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _CANONICAL_TX_ID = re.compile(r"^[A-Za-z0-9._-]+$")
+_COMPILER_POLICY_ID = re.compile(r"^ZD-(\d{2})-(\d{3})-(\d{2})-(\d{2})-(\d{2})$")
 
 @dataclass
 class Score:
@@ -104,6 +105,39 @@ def _validate_policy_definition(policy: Policy) -> None:
             raise ValueError(
                 f"scored policy has out-of-range {field}; expected [{minimum:g}, {maximum:g}]"
             )
+
+    _validate_compiler_identity_binding(policy)
+
+
+def _validate_compiler_identity_binding(policy: Policy) -> None:
+    """Reject stale compiler identities before their metrics can be scored or reported."""
+    if not policy.policy_id.startswith("ZD-"):
+        return
+
+    match = _COMPILER_POLICY_ID.fullmatch(policy.policy_id)
+    if match is None:
+        raise ValueError("scored compiler policy has malformed ZD policy_id")
+
+    generation, age, card_percent, settle, burst_percent = (int(value) for value in match.groups())
+    if not 1 <= generation <= 8:
+        raise ValueError("scored compiler policy generation must be within [1, 8]")
+
+    expected = (
+        float(age),
+        card_percent / 100,
+        float(settle),
+        burst_percent / 100,
+    )
+    actual = (
+        float(policy.merchant_age_max),
+        float(policy.first_time_card_ratio_min),
+        float(policy.settlement_change_days_max),
+        float(policy.temporal_burst_score_min),
+    )
+    if actual != expected:
+        raise ValueError(
+            "scored compiler policy ZD policy_id does not encode the scored thresholds"
+        )
 
 
 def _validate_policy_features(tx: Transaction, population: str) -> None:
