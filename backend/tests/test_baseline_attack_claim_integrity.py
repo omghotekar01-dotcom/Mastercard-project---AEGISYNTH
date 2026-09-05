@@ -36,3 +36,28 @@ def test_baseline_attack_success_rejects_duplicate_weighting():
 
     with pytest.raises(ValueError, match="duplicate tx_id"):
         AegisynthEngine._baseline_attack_success([attack, attack.model_copy()])
+
+
+@pytest.mark.parametrize(
+    "tx_id",
+    [
+        "A/000001",
+        "A:000001",
+        "A\x0000001",
+        "A-０００００１",
+    ],
+)
+def test_baseline_attack_success_rejects_noncanonical_transaction_ids(tx_id: str):
+    attack = PaymentWorld(seed=42).attack(1)[0]
+    malformed = attack.model_copy(update={"tx_id": tx_id})
+
+    with pytest.raises(ValueError, match="tx_id may contain only ASCII letters"):
+        AegisynthEngine._baseline_attack_success([malformed])
+
+
+def test_baseline_attack_success_rejects_oversized_transaction_id():
+    attack = PaymentWorld(seed=42).attack(1)[0]
+    malformed = attack.model_copy(update={"tx_id": "A" * 65})
+
+    with pytest.raises(ValueError, match="tx_id must be at most 64 characters"):
+        AegisynthEngine._baseline_attack_success([malformed])
