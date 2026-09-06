@@ -72,3 +72,22 @@ def test_compiler_output_is_invariant_to_evidence_row_order():
     )
 
     assert reordered.model_dump() == canonical.model_dump()
+
+
+def test_generation_metadata_does_not_change_policy_semantics_or_metrics():
+    """Generation bookkeeping may change lineage identity, never synthesis results."""
+    benign, attacks = _evidence()
+    compiler = DefenceCompiler(max_fpr=0.02)
+
+    generation_one = compiler.synthesize(benign, attacks, generation=1)
+    generation_eight = compiler.synthesize(benign, attacks, generation=8)
+
+    first_payload = generation_one.model_dump()
+    eighth_payload = generation_eight.model_dump()
+    first_id = first_payload.pop("policy_id")
+    eighth_id = eighth_payload.pop("policy_id")
+
+    assert first_payload == eighth_payload
+    assert first_id.startswith("ZD-01-")
+    assert eighth_id.startswith("ZD-08-")
+    assert first_id.removeprefix("ZD-01-") == eighth_id.removeprefix("ZD-08-")
