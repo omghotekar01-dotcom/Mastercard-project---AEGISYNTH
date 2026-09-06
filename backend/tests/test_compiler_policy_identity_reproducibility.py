@@ -57,3 +57,18 @@ def test_compiler_policy_identity_is_reproducible_and_semantic():
     assert int(card) == round(first.first_time_card_ratio_min * 100)
     assert int(settle) == int(first.settlement_change_days_max)
     assert int(burst) == round(first.temporal_burst_score_min * 100)
+
+
+def test_compiler_output_is_invariant_to_evidence_row_order():
+    """Dataset row ordering must not change the policy or judge-facing metrics."""
+    benign, attacks = _evidence()
+    compiler = DefenceCompiler(max_fpr=0.02)
+
+    canonical = compiler.synthesize(benign, attacks, generation=3)
+    reordered = compiler.synthesize(
+        [benign[2], benign[0], benign[1]],
+        [attacks[1], attacks[2], attacks[0]],
+        generation=3,
+    )
+
+    assert reordered.model_dump() == canonical.model_dump()
