@@ -14,6 +14,7 @@ from .schemas import Policy
 ALLOWED_ACTIONS = {"PASS", "STEP_UP", "REVIEW"}
 DEFAULT_MAX_POLICY_LATENCY_MS = 5.0
 DEFAULT_Z3_TIMEOUT_MS = 1000
+_COMPILER_ESTIMATED_LATENCY_MS = 0.35
 _CANONICAL_POLICY_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _COMPILER_POLICY_ID = re.compile(r"^ZD-(\d{2})-(\d{3})-(\d{2})-(\d{2})-(\d{2})$")
 
@@ -53,9 +54,9 @@ def _validate_compiler_identity_binding(policy: Policy) -> tuple[bool, list[str]
 
     Generic external policy IDs remain supported, but any ID claiming compiler lineage via
     the ``ZD-`` prefix must use the compiler's exact identity layout, retain the compiler's
-    STEP_UP action, and describe the actual policy thresholds presented to the verifier.
-    This prevents a policy artifact from being mutated after synthesis while retaining an
-    audit identity for different semantics.
+    STEP_UP action and latency claim, and describe the actual policy thresholds presented to
+    the verifier. This prevents a policy artifact from being mutated after synthesis while
+    retaining an audit identity for different semantics or a fabricated latency budget claim.
     """
     if not policy.policy_id.startswith("ZD-"):
         return True, []
@@ -70,6 +71,10 @@ def _validate_compiler_identity_binding(policy: Policy) -> tuple[bool, list[str]
     if policy.action != "STEP_UP":
         return False, [
             "Compiler policy identity mismatch: ZD policies must retain the compiler STEP_UP action"
+        ]
+    if float(policy.estimated_latency_ms) != _COMPILER_ESTIMATED_LATENCY_MS:
+        return False, [
+            "Compiler policy identity mismatch: ZD policies must retain the compiler estimated latency"
         ]
 
     expected = (
