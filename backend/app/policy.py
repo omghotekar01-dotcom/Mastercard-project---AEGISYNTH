@@ -288,13 +288,14 @@ class DefenceCompiler:
                 estimated_latency_ms=0.35,
             )
             s = score_policy(candidate, benign, attacks)
-            if s.fpr > self.max_fpr:
+            reported_fpr = round(s.fpr, 4)
+            if s.fpr > self.max_fpr or reported_fpr > self.max_fpr:
                 continue
             complexity_penalty = (age / 240 + (1-card) + settle / 45 + (1-burst)) * 0.004
             utility = s.coverage - 3.5*s.fpr - complexity_penalty
             if best is None or utility > best[0]:
                 candidate.fraud_coverage = round(s.coverage, 4)
-                candidate.false_positive_rate = round(s.fpr, 4)
+                candidate.false_positive_rate = reported_fpr
                 candidate.explanation = (
                     "Step up transactions when a very young merchant simultaneously exhibits "
                     "high first-time-card concentration, a recent settlement change, and burst-like timing."
