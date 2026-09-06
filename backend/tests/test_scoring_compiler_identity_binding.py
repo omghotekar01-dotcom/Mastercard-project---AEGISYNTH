@@ -48,6 +48,16 @@ def test_scoring_accepts_compiler_identity_when_encoded_semantics_match():
     assert score.coverage == 1.0
 
 
+def test_scoring_rejects_mutated_review_action_under_compiler_identity():
+    policy = _compiled_policy().model_copy(update={"action": "REVIEW"})
+
+    with pytest.raises(
+        ValueError,
+        match="scored compiler policy must retain the compiler STEP_UP action",
+    ):
+        _score(policy)
+
+
 @pytest.mark.parametrize(
     ("field", "tampered_value"),
     [
