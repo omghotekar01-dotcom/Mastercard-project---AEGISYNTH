@@ -117,12 +117,19 @@ def test_runtime_self_check_fails_closed_on_generation_provenance_drift(monkeypa
 
 def test_runtime_self_check_fails_closed_without_formal_verifier(monkeypatch):
     monkeypatch.setattr(main_module, 'HAS_Z3', False)
+
+    def artifact_builder_must_not_run(_result):
+        raise AssertionError('self-check must not build review artifacts without the formal verifier')
+
+    monkeypatch.setattr(main_module, 'build_review_package', artifact_builder_must_not_run)
+
     res = client.get('/api/v1/self-check')
     assert res.status_code == 503
     data = res.json()
     assert data['status'] == 'fail'
     assert data['checks']['z3_formal_verifier_available'] is False
     assert data['checks']['z3_formal_verifier_operational'] is False
+    assert data['checks']['artifact_integrity'] is False
 
 
 def test_runtime_self_check_fails_closed_when_formal_verifier_runtime_breaks(monkeypatch):

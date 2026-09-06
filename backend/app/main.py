@@ -121,8 +121,18 @@ def review_package():
 def self_check(response: Response):
     """Return a non-success status when any runtime contract check fails."""
     result = _benchmark()
-    package = build_review_package(result)
     verifier_operational = _formal_verifier_operational()
+
+    # Artifact construction requires the formal verifier. Do not let a missing/broken
+    # verifier turn this diagnostics endpoint into a 500; represent that dependency as
+    # failed checks and return the intended fail-closed 503 response instead.
+    package = None
+    if verifier_operational:
+        try:
+            package = build_review_package(result)
+        except (RuntimeError, ValueError):
+            package = None
+
     checks = {
         "benchmark_seed": result.seed == BENCHMARK_SEED,
         "attack_family": result.attack_family == ATTACK_FAMILY,
@@ -134,13 +144,13 @@ def self_check(response: Response):
         "policy_verified": result.final_policy.verified is True,
         "responsible_action": result.final_policy.action in {"STEP_UP", "REVIEW"},
         "false_positive_budget": result.final_policy.false_positive_rate <= 0.02,
-        "human_approval_required": package.approval_status == "HUMAN_APPROVAL_REQUIRED",
-        "not_auto_deployed": package.deployment_status == "NOT_DEPLOYED",
-        "artifact_seed": package.seed == BENCHMARK_SEED,
-        "artifact_attack_family": package.attack_family == ATTACK_FAMILY,
-        "artifact_generation_count": package.provenance.generation_count == BENCHMARK_GENERATIONS,
-        "artifact_fingerprint": len(package.artifact_sha256) == 64,
-        "artifact_integrity": verify_review_package(package),
+        "human_approval_required": package is not None and package.approval_status == "HUMAN_APPROVAL_REQUIRED",
+        "not_auto_deployed": package is not None and package.deployment_status == "NOT_DEPLOYED",
+        "artifact_seed": package is not None and package.seed == BENCHMARK_SEED,
+        "artifact_attack_family": package is not None and package.attack_family == ATTACK_FAMILY,
+        "artifact_generation_count": package is not None and package.provenance.generation_count == BENCHMARK_GENERATIONS,
+        "artifact_fingerprint": package is not None and len(package.artifact_sha256) == 64,
+        "artifact_integrity": package is not None and verify_review_package(package),
         "dashboard_present": (STATIC_DIR / "index.html").exists(),
         "z3_formal_verifier_available": HAS_Z3,
         "z3_formal_verifier_operational": verifier_operational,
