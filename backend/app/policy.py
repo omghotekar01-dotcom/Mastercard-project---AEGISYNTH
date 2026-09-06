@@ -13,6 +13,7 @@ FEATURES = (
     "settlement_change_days",
     "temporal_burst_score",
 )
+_COMPILER_ESTIMATED_LATENCY_MS = 0.35
 _CANONICAL_POLICY_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _CANONICAL_TX_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _COMPILER_POLICY_ID = re.compile(r"^ZD-(\d{2})-(\d{3})-(\d{2})-(\d{2})-(\d{2})$")
@@ -123,6 +124,11 @@ def _validate_compiler_identity_binding(policy: Policy) -> None:
         raise ValueError("scored compiler policy generation must be within [1, 8]")
     if policy.action != "STEP_UP":
         raise ValueError("scored compiler policy must retain the compiler STEP_UP action")
+    if (
+        not _is_real_number(policy.estimated_latency_ms)
+        or float(policy.estimated_latency_ms) != _COMPILER_ESTIMATED_LATENCY_MS
+    ):
+        raise ValueError("scored compiler policy must retain the compiler estimated latency")
 
     expected = (
         float(age),
