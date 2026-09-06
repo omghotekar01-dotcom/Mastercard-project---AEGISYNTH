@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from app.policy import DefenceCompiler
+from app.policy import DefenceCompiler, score_policy
 from app.schemas import Transaction
 from app.verification import verify_policy
 
@@ -53,17 +53,21 @@ def test_compiler_output_satisfies_verifier_boundary(generation: int):
 
     This contract exercises the full supported generation domain so compiler and verifier
     cannot silently drift on identity encoding, action provenance, numeric domains,
-    false-positive budgets, latency guardrails, or Z3 satisfiability.
+    false-positive budgets, latency guardrails, reported benchmark metrics, or Z3
+    satisfiability.
     """
     benign, attacks = _evidence()
     compiler = DefenceCompiler(max_fpr=0.02)
 
     policy = compiler.synthesize(benign, attacks, generation=generation)
+    rescored = score_policy(policy, benign, attacks)
     verified, notes = verify_policy(policy, max_fpr=compiler.max_fpr)
 
     assert _CANONICAL_POLICY_ID.fullmatch(policy.policy_id)
     assert policy.policy_id.startswith(f"ZD-{generation:02d}-")
     assert policy.action == "STEP_UP"
+    assert policy.fraud_coverage == round(rescored.coverage, 4)
+    assert policy.false_positive_rate == round(rescored.fpr, 4)
     assert policy.false_positive_rate <= compiler.max_fpr
     assert verified, notes
     assert any(note.startswith("Z3:") for note in notes)
