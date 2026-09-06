@@ -121,6 +121,8 @@ def _validate_compiler_identity_binding(policy: Policy) -> None:
     generation, age, card_percent, settle, burst_percent = (int(value) for value in match.groups())
     if not 1 <= generation <= 8:
         raise ValueError("scored compiler policy generation must be within [1, 8]")
+    if policy.action != "STEP_UP":
+        raise ValueError("scored compiler policy must retain the compiler STEP_UP action")
 
     expected = (
         float(age),
