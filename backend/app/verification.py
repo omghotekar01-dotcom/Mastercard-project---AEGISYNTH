@@ -49,12 +49,13 @@ def _validate_policy_identity(policy: Policy) -> tuple[bool, list[str]]:
 
 
 def _validate_compiler_identity_binding(policy: Policy) -> tuple[bool, list[str]]:
-    """Bind compiler-style ZD identities to the threshold semantics they encode.
+    """Bind compiler-style ZD identities to the semantics emitted by the compiler.
 
     Generic external policy IDs remain supported, but any ID claiming compiler lineage via
-    the ``ZD-`` prefix must use the compiler's exact identity layout and must describe the
-    actual policy thresholds presented to the verifier. This prevents a policy artifact from
-    being mutated after synthesis while retaining an audit identity for different semantics.
+    the ``ZD-`` prefix must use the compiler's exact identity layout, retain the compiler's
+    STEP_UP action, and describe the actual policy thresholds presented to the verifier.
+    This prevents a policy artifact from being mutated after synthesis while retaining an
+    audit identity for different semantics.
     """
     if not policy.policy_id.startswith("ZD-"):
         return True, []
@@ -66,6 +67,10 @@ def _validate_compiler_identity_binding(policy: Policy) -> tuple[bool, list[str]
     generation, age, card_percent, settle, burst_percent = (int(value) for value in match.groups())
     if not 1 <= generation <= 8:
         return False, ["Compiler policy identity invalid: generation must be within [1, 8]"]
+    if policy.action != "STEP_UP":
+        return False, [
+            "Compiler policy identity mismatch: ZD policies must retain the compiler STEP_UP action"
+        ]
 
     expected = (
         float(age),
