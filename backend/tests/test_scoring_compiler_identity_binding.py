@@ -58,6 +58,16 @@ def test_scoring_rejects_mutated_review_action_under_compiler_identity():
         _score(policy)
 
 
+def test_scoring_rejects_mutated_latency_under_compiler_identity():
+    policy = _compiled_policy().model_copy(update={"estimated_latency_ms": 0.10})
+
+    with pytest.raises(
+        ValueError,
+        match="scored compiler policy must retain the compiler estimated latency",
+    ):
+        _score(policy)
+
+
 @pytest.mark.parametrize(
     ("field", "tampered_value"),
     [
