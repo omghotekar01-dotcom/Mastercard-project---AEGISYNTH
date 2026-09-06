@@ -47,12 +47,13 @@ def _evidence() -> tuple[list[Transaction], list[Transaction]]:
     return benign, attacks
 
 
-@pytest.mark.parametrize("generation", [1, 8])
+@pytest.mark.parametrize("generation", range(1, 9))
 def test_compiler_output_satisfies_verifier_boundary(generation: int):
-    """Compiler output must be directly admissible to the formal/business verifier.
+    """Every supported compiler generation must satisfy the verifier boundary.
 
-    This contract prevents the compiler and verifier from silently drifting on identity,
-    action, numeric-domain, false-positive, or latency guardrails.
+    This contract exercises the full supported generation domain so compiler and verifier
+    cannot silently drift on identity encoding, action provenance, numeric domains,
+    false-positive budgets, latency guardrails, or Z3 satisfiability.
     """
     benign, attacks = _evidence()
     compiler = DefenceCompiler(max_fpr=0.02)
@@ -61,7 +62,8 @@ def test_compiler_output_satisfies_verifier_boundary(generation: int):
     verified, notes = verify_policy(policy, max_fpr=compiler.max_fpr)
 
     assert _CANONICAL_POLICY_ID.fullmatch(policy.policy_id)
-    assert policy.action in {"STEP_UP", "REVIEW"}
+    assert policy.policy_id.startswith(f"ZD-{generation:02d}-")
+    assert policy.action == "STEP_UP"
     assert policy.false_positive_rate <= compiler.max_fpr
     assert verified, notes
     assert any(note.startswith("Z3:") for note in notes)
