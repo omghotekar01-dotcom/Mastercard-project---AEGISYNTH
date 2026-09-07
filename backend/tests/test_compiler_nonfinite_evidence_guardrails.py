@@ -1,5 +1,3 @@
-import math
-
 import pytest
 
 from app.policy import DefenceCompiler, score_policy
