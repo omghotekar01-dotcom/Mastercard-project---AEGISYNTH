@@ -27,7 +27,7 @@ This document maps every material public claim in the Kaggle writeup, README, de
 | Counterexample traces cannot present ambiguous escaped-sample identities | `CounterexampleTrace` rejects blank, whitespace-containing, over-length and duplicate sample IDs | `test_iteration_evidence_integrity.py` |
 | Judge-facing attack-family provenance is canonical | `LabResult` and `ReviewPackage` reject whitespace-containing and reserved `benign` attack-family labels | `test_judge_attack_family_provenance.py` |
 | Policy identity is consistent across schema, scoring and verification boundaries | canonical `policy_id` is required even when callers bypass ordinary Pydantic construction | `test_policy_identity_schema.py`; `test_policy_scoring_identity.py`; `test_verification_policy_identity.py` |
-| Direct benchmark scoring fails closed on ambiguous identity or malformed latency evidence | `score_policy()` requires meaningful ASCII-safe policy/transaction identities and finite non-negative latency before computing coverage/FPR | `backend/tests/test_scoring_policy_identity_quality.py`; `backend/tests/test_evidence_transaction_identity_quality.py`; `backend/tests/test_scoring_latency_guardrails.py` |
+| Direct benchmark scoring fails closed on ambiguous identity or malformed latency evidence | `score_policy()` requires meaningful ASCII-safe policy/transaction identities and finite non-negative latency before computing coverage/FPR | `backend/tests/test_scoring_policy_identity_quality.py`; `backend/tests/test_scoring_transaction_identity_quality.py`; `backend/tests/test_scoring_latency_guardrails.py` |
 
 ## Reproducible benchmark contract
 
