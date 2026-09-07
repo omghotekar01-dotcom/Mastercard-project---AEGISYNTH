@@ -46,6 +46,8 @@ def _validate_policy_identity(policy: Policy) -> tuple[bool, list[str]]:
         return False, [
             "Policy identity invalid: policy_id may contain only ASCII letters, digits, '.', '_', and '-'"
         ]
+    if not any(char.isalnum() for char in policy.policy_id):
+        return False, ["Policy identity invalid: policy_id must contain at least one ASCII letter or digit"]
     return True, []
 
 
