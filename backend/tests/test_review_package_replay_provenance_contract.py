@@ -1,5 +1,6 @@
 import hashlib
 
+import app.artifact as artifact_module
 from app.artifact import _canonical_fields, build_review_package, verify_review_package
 from app.engine import AegisynthEngine
 
@@ -54,5 +55,18 @@ def test_unexpected_replay_exception_fails_closed(monkeypatch):
         raise TypeError("unexpected replay dependency failure")
 
     monkeypatch.setattr(AegisynthEngine, "run", broken_run)
+
+    assert verify_review_package(package) is False
+
+
+def test_unexpected_verifier_exception_fails_closed(monkeypatch):
+    """Unexpected formal-verifier failures must reject the artifact instead of escaping."""
+    result = AegisynthEngine(seed=42, max_fpr=0.02).run(generations=2)
+    package = build_review_package(result)
+
+    def broken_verify(*args, **kwargs):
+        raise TypeError("unexpected formal verifier dependency failure")
+
+    monkeypatch.setattr(artifact_module, "verify_policy", broken_verify)
 
     assert verify_review_package(package) is False
