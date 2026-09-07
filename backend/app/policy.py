@@ -109,6 +109,11 @@ def _validate_policy_definition(policy: Policy) -> None:
                 f"scored policy has out-of-range {field}; expected [{minimum:g}, {maximum:g}]"
             )
 
+    if not _is_real_number(policy.estimated_latency_ms):
+        raise ValueError("scored policy has non-numeric estimated_latency_ms")
+    if not math.isfinite(policy.estimated_latency_ms) or policy.estimated_latency_ms < 0:
+        raise ValueError("scored policy estimated_latency_ms must be finite and >= 0")
+
     _validate_compiler_identity_binding(policy)
 
 
