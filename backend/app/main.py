@@ -140,15 +140,18 @@ def self_check(response: Response):
 
     verifier_operational = _formal_verifier_operational()
 
-    # Artifact construction requires the formal verifier. Do not let a missing/broken
-    # verifier turn this diagnostics endpoint into a 500; represent that dependency as
-    # failed checks and return the intended fail-closed 503 response instead.
+    # Artifact construction and verification are diagnostic trust boundaries. Any
+    # unexpected package/verifier runtime failure must become failed checks instead
+    # of escaping as an opaque 500 from deployment probes.
     package = None
+    artifact_integrity = False
     if verifier_operational:
         try:
             package = build_review_package(result)
-        except (RuntimeError, ValueError):
+            artifact_integrity = verify_review_package(package)
+        except Exception:
             package = None
+            artifact_integrity = False
 
     checks = {
         "benchmark_runtime_operational": True,
@@ -168,7 +171,7 @@ def self_check(response: Response):
         "artifact_attack_family": package is not None and package.attack_family == ATTACK_FAMILY,
         "artifact_generation_count": package is not None and package.provenance.generation_count == BENCHMARK_GENERATIONS,
         "artifact_fingerprint": package is not None and len(package.artifact_sha256) == 64,
-        "artifact_integrity": package is not None and verify_review_package(package),
+        "artifact_integrity": artifact_integrity,
         "dashboard_present": (STATIC_DIR / "index.html").exists(),
         "z3_formal_verifier_available": HAS_Z3,
         "z3_formal_verifier_operational": verifier_operational,
