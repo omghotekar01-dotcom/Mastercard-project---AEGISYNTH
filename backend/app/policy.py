@@ -181,6 +181,10 @@ def _validate_evidence_metadata(tx: Transaction, population: str, expected_label
         raise ValueError(
             f"{population} evaluation transaction tx_id may contain only ASCII letters, digits, '.', '_', and '-'"
         )
+    if not any(char.isalnum() for char in tx.tx_id):
+        raise ValueError(
+            f"{population} evaluation transaction tx_id must contain at least one ASCII letter or digit"
+        )
     if type(tx.label) is not int or tx.label != expected_label:
         raise ValueError(
             f"{population} evaluation population must contain only label={expected_label} integer transactions"
