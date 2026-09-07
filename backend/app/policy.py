@@ -83,6 +83,8 @@ def _validate_policy_definition(policy: Policy) -> None:
         raise ValueError(
             "scored policy policy_id may contain only ASCII letters, digits, '.', '_', and '-'"
         )
+    if not any(char.isalnum() for char in policy.policy_id):
+        raise ValueError("scored policy policy_id must contain at least one ASCII letter or digit")
     if not isinstance(policy.action, str):
         raise ValueError("scored policy action must be a string")
     if policy.action not in {"PASS", "STEP_UP", "REVIEW"}:
