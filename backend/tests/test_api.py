@@ -50,6 +50,24 @@ def test_readiness_fails_closed_when_formal_verifier_runtime_breaks(monkeypatch)
     assert data['formal_verifier'] == 'unavailable'
 
 
+def test_readiness_fails_closed_when_formal_verifier_raises(monkeypatch):
+    monkeypatch.setattr(main_module, 'HAS_Z3', True)
+
+    def broken_verifier(_policy):
+        raise RuntimeError('solver unavailable')
+
+    monkeypatch.setattr(main_module, 'verify_policy', broken_verifier)
+
+    res = client.get('/ready')
+
+    assert res.status_code == 503
+    data = res.json()
+    assert data['status'] == 'not_ready'
+    assert data['checks']['z3_formal_verifier_available'] is True
+    assert data['checks']['z3_formal_verifier_operational'] is False
+    assert data['formal_verifier'] == 'unavailable'
+
+
 def test_readiness_fails_closed_without_dashboard(monkeypatch, tmp_path):
     monkeypatch.setattr(main_module, 'STATIC_DIR', tmp_path)
     res = client.get('/ready')
@@ -143,6 +161,24 @@ def test_runtime_self_check_fails_closed_when_formal_verifier_runtime_breaks(mon
     assert data['status'] == 'fail'
     assert data['checks']['z3_formal_verifier_available'] is True
     assert data['checks']['z3_formal_verifier_operational'] is False
+
+
+def test_runtime_self_check_fails_closed_when_formal_verifier_raises(monkeypatch):
+    monkeypatch.setattr(main_module, 'HAS_Z3', True)
+
+    def broken_verifier(_policy):
+        raise RuntimeError('solver unavailable')
+
+    monkeypatch.setattr(main_module, 'verify_policy', broken_verifier)
+
+    res = client.get('/api/v1/self-check')
+
+    assert res.status_code == 503
+    data = res.json()
+    assert data['status'] == 'fail'
+    assert data['checks']['z3_formal_verifier_available'] is True
+    assert data['checks']['z3_formal_verifier_operational'] is False
+    assert data['checks']['artifact_integrity'] is False
 
 
 def test_lab_api_schema():

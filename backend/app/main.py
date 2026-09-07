@@ -61,7 +61,12 @@ def _formal_verifier_operational() -> bool:
         estimated_latency_ms=1.0,
         counterexamples_remaining=0,
     )
-    ok, _notes = verify_policy(canary)
+    try:
+        ok, _notes = verify_policy(canary)
+    except Exception:
+        # Readiness is a trust boundary: unexpected solver/runtime failures must
+        # report unavailable rather than escaping as a 500 from health probes.
+        return False
     return ok
 
 
