@@ -278,13 +278,14 @@ def _has_supported_review_contract(package: ReviewPackage) -> bool:
 
 
 def _has_current_semantic_evidence(package: ReviewPackage) -> bool:
-    """Re-run declared business/formal checks instead of trusting a recomputed digest.
+    """Re-run declared verification and deterministic synthesis provenance.
 
     SHA-256 detects accidental or uncoordinated modification, but it is not an author
     signature: a caller that changes protected fields can also recompute the fingerprint.
     The review verifier therefore independently re-evaluates the exact policy against the
-    budgets recorded in provenance and requires the stored notes to match fresh verifier
-    output. Because the declared verifier identity is Z3-specific, absence of Z3 fails closed.
+    recorded budgets and also replays the deterministic engine from the declared seed,
+    attack family, and generation count. This prevents a recomputed digest from relabelling
+    a valid policy as evidence from a benchmark run that never produced it.
     """
     if not HAS_Z3 or not package.policy.verified:
         return False
@@ -293,7 +294,28 @@ def _has_current_semantic_evidence(package: ReviewPackage) -> bool:
         max_fpr=package.provenance.max_false_positive_rate,
         max_latency_ms=package.provenance.max_policy_latency_ms,
     )
-    return verified and package.verification_notes == current_notes
+    if not verified or package.verification_notes != current_notes:
+        return False
+
+    # Import lazily to keep the artifact builder independent of engine module loading while
+    # still binding judge-facing provenance to a reproducible deterministic synthesis run.
+    from .engine import AegisynthEngine
+
+    try:
+        reproduced = AegisynthEngine(
+            seed=package.seed,
+            max_fpr=package.provenance.max_false_positive_rate,
+        ).run(
+            generations=package.provenance.generation_count,
+            attack_family=package.attack_family,
+        )
+    except (RuntimeError, ValueError):
+        return False
+
+    return (
+        reproduced.final_policy == package.policy
+        and reproduced.verification_notes == package.verification_notes
+    )
 
 
 def _has_valid_artifact_fingerprint(package: ReviewPackage) -> bool:
