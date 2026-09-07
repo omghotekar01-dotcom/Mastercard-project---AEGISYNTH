@@ -20,7 +20,7 @@ def test_recomputed_fingerprint_cannot_relabel_benchmark_seed():
         approval_status=package.approval_status,
         deployment_status=package.deployment_status,
         synthetic_only=package.synthetic_only,
-        production_claim=package.production_CLAIM if False else package.production_claim,
+        production_claim=package.production_claim,
     )
     recomputed_digest = hashlib.sha256(canonical).hexdigest()
     relabelled = package.model_copy(
