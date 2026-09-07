@@ -43,3 +43,16 @@ def test_replay_runtime_failure_fails_closed(monkeypatch):
     monkeypatch.setattr(AegisynthEngine, "run", broken_run)
 
     assert verify_review_package(package) is False
+
+
+def test_unexpected_replay_exception_fails_closed(monkeypatch):
+    """Unexpected replay exceptions must also reject the artifact instead of escaping verification."""
+    result = AegisynthEngine(seed=42, max_fpr=0.02).run(generations=2)
+    package = build_review_package(result)
+
+    def broken_run(self, *args, **kwargs):
+        raise TypeError("unexpected replay dependency failure")
+
+    monkeypatch.setattr(AegisynthEngine, "run", broken_run)
+
+    assert verify_review_package(package) is False

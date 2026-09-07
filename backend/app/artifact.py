@@ -309,7 +309,9 @@ def _has_current_semantic_evidence(package: ReviewPackage) -> bool:
             generations=package.provenance.generation_count,
             attack_family=package.attack_family,
         )
-    except (RuntimeError, ValueError):
+    except Exception:
+        # Verification is a trust boundary: any replay failure, including an unexpected
+        # dependency/runtime exception, must reject the artifact rather than escape open.
         return False
 
     return (
