@@ -8,6 +8,7 @@ from urllib.request import urlopen
 
 
 REQUIRED_SELF_CHECKS = {
+    "benchmark_runtime_operational",
     "benchmark_seed",
     "baseline_attack_success",
     "final_attack_success",
