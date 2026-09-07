@@ -20,7 +20,7 @@ def test_recomputed_fingerprint_cannot_relabel_benchmark_seed():
         approval_status=package.approval_status,
         deployment_status=package.deployment_status,
         synthetic_only=package.synthetic_only,
-        production_claim=package.production_claim,
+        production_claim=package.production_CLAIM if False else package.production_claim,
     )
     recomputed_digest = hashlib.sha256(canonical).hexdigest()
     relabelled = package.model_copy(
@@ -30,3 +30,16 @@ def test_recomputed_fingerprint_cannot_relabel_benchmark_seed():
     assert relabelled.artifact_sha256 != package.artifact_sha256
     assert verify_review_package(package) is True
     assert verify_review_package(relabelled) is False
+
+
+def test_replay_runtime_failure_fails_closed(monkeypatch):
+    """A replay runtime failure must reject the artifact rather than weaken provenance checks."""
+    result = AegisynthEngine(seed=42, max_fpr=0.02).run(generations=2)
+    package = build_review_package(result)
+
+    def broken_run(self, *args, **kwargs):
+        raise RuntimeError("deterministic replay unavailable")
+
+    monkeypatch.setattr(AegisynthEngine, "run", broken_run)
+
+    assert verify_review_package(package) is False
