@@ -91,3 +91,15 @@ def test_generation_metadata_does_not_change_policy_semantics_or_metrics():
     assert first_id.startswith("ZD-01-")
     assert eighth_id.startswith("ZD-08-")
     assert first_id.removeprefix("ZD-01-") == eighth_id.removeprefix("ZD-08-")
+
+
+def test_compiler_does_not_mutate_benchmark_evidence():
+    """Synthesis must be read-only over benchmark evidence used for reproducible claims."""
+    benign, attacks = _evidence()
+    benign_before = [tx.model_dump(mode="json") for tx in benign]
+    attacks_before = [tx.model_dump(mode="json") for tx in attacks]
+
+    DefenceCompiler(max_fpr=0.02).synthesize(benign, attacks, generation=3)
+
+    assert [tx.model_dump(mode="json") for tx in benign] == benign_before
+    assert [tx.model_dump(mode="json") for tx in attacks] == attacks_before
