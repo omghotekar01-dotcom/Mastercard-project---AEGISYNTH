@@ -243,12 +243,18 @@ def _matches_compiler_profile(package: ReviewPackage) -> bool:
     """
     policy = package.policy
     generation = package.provenance.generation_count
-    expected_policy_id = (
-        f"ZD-{generation:02d}-{int(policy.merchant_age_max):03d}-"
-        f"{_percent_code(policy.first_time_card_ratio_min):02d}-"
-        f"{int(policy.settlement_change_days_max):02d}-"
-        f"{_percent_code(policy.temporal_burst_score_min):02d}"
-    )
+    try:
+        expected_policy_id = (
+            f"ZD-{generation:02d}-{int(policy.merchant_age_max):03d}-"
+            f"{_percent_code(policy.first_time_card_ratio_min):02d}-"
+            f"{int(policy.settlement_change_days_max):02d}-"
+            f"{_percent_code(policy.temporal_burst_score_min):02d}"
+        )
+    except (ArithmeticError, TypeError, ValueError):
+        # Review verification is a trust boundary. Schema-bypassed malformed or
+        # non-finite compiler thresholds must reject the artifact, never escape as
+        # a verifier/runtime exception while reconstructing semantic policy identity.
+        return False
     return (
         policy.merchant_age_max in _COMPILER_AGE_GRID
         and policy.first_time_card_ratio_min in _COMPILER_CARD_GRID
