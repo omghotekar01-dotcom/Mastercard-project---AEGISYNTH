@@ -289,19 +289,20 @@ def _has_current_semantic_evidence(package: ReviewPackage) -> bool:
     """
     if not HAS_Z3 or not package.policy.verified:
         return False
-    verified, current_notes = verify_policy(
-        package.policy,
-        max_fpr=package.provenance.max_false_positive_rate,
-        max_latency_ms=package.provenance.max_policy_latency_ms,
-    )
-    if not verified or package.verification_notes != current_notes:
-        return False
-
-    # Import lazily to keep the artifact builder independent of engine module loading while
-    # still binding judge-facing provenance to a reproducible deterministic synthesis run.
-    from .engine import AegisynthEngine
 
     try:
+        verified, current_notes = verify_policy(
+            package.policy,
+            max_fpr=package.provenance.max_false_positive_rate,
+            max_latency_ms=package.provenance.max_policy_latency_ms,
+        )
+        if not verified or package.verification_notes != current_notes:
+            return False
+
+        # Import lazily to keep the artifact builder independent of engine module loading while
+        # still binding judge-facing provenance to a reproducible deterministic synthesis run.
+        from .engine import AegisynthEngine
+
         reproduced = AegisynthEngine(
             seed=package.seed,
             max_fpr=package.provenance.max_false_positive_rate,
@@ -310,8 +311,8 @@ def _has_current_semantic_evidence(package: ReviewPackage) -> bool:
             attack_family=package.attack_family,
         )
     except Exception:
-        # Verification is a trust boundary: any replay failure, including an unexpected
-        # dependency/runtime exception, must reject the artifact rather than escape open.
+        # Verification is a trust boundary: any verifier or replay failure, including an
+        # unexpected dependency/runtime exception, must reject the artifact rather than escape.
         return False
 
     return (
