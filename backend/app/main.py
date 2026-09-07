@@ -125,7 +125,19 @@ def review_package():
 @app.get("/api/v1/self-check")
 def self_check(response: Response):
     """Return a non-success status when any runtime contract check fails."""
-    result = _benchmark()
+    try:
+        result = _benchmark()
+    except Exception:
+        # Diagnostics must fail closed as a structured 503 even when the benchmark
+        # runtime itself crashes; otherwise deployment probes see an opaque 500.
+        response.status_code = 503
+        return {
+            "status": "fail",
+            "version": APP_VERSION,
+            "checks": {"benchmark_runtime_operational": False},
+            "scope": "synthetic prototype runtime self-check",
+        }
+
     verifier_operational = _formal_verifier_operational()
 
     # Artifact construction requires the formal verifier. Do not let a missing/broken
@@ -139,6 +151,7 @@ def self_check(response: Response):
             package = None
 
     checks = {
+        "benchmark_runtime_operational": True,
         "benchmark_seed": result.seed == BENCHMARK_SEED,
         "attack_family": result.attack_family == ATTACK_FAMILY,
         "generation_count": len(result.iterations) == BENCHMARK_GENERATIONS,
