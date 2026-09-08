@@ -298,7 +298,7 @@ class ReviewPackage(BaseModel):
     seed: int = Field(ge=0, strict=True)
     provenance: CompilationProvenance
     policy: Policy
-    verification_notes: list[str]
+    verification_notes: list[str] = Field(min_length=1)
     approval_status: Literal["HUMAN_APPROVAL_REQUIRED"] = "HUMAN_APPROVAL_REQUIRED"
     deployment_status: Literal["NOT_DEPLOYED"] = "NOT_DEPLOYED"
     synthetic_only: Literal[True] = True
@@ -308,6 +308,14 @@ class ReviewPackage(BaseModel):
     @classmethod
     def require_canonical_attack_family(cls, value: str) -> str:
         return _require_canonical_attack_family(value)
+
+    @field_validator("verification_notes")
+    @classmethod
+    def require_substantive_verification_notes(cls, value: list[str]) -> list[str]:
+        """Do not allow a review-ready handoff to claim verification without evidence text."""
+        if any(not note.strip() for note in value):
+            raise ValueError("verification_notes must contain only non-empty evidence strings")
+        return value
 
     @model_validator(mode="after")
     def require_verified_review_policy(self) -> "ReviewPackage":
