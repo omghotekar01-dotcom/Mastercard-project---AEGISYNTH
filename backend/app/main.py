@@ -114,7 +114,20 @@ def meta():
 
 @app.get("/api/v1/demo", response_model=LabResult)
 def run_reproducible_demo():
-    return _benchmark()
+    """Return the committed synthetic benchmark, failing closed if replay is unavailable."""
+    try:
+        return _benchmark()
+    except Exception as exc:
+        # The public reproducibility endpoint is a trust boundary. Do not leak engine,
+        # solver, or runtime internals when benchmark replay cannot be produced.
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "unavailable",
+                "reason": "benchmark_replay_failed",
+                "scope": "synthetic defensive payment-security laboratory",
+            },
+        ) from exc
 
 
 @app.get("/api/v1/review-package", response_model=ReviewPackage)
