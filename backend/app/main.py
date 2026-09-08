@@ -224,10 +224,24 @@ def run_lab(
     seed: int = Query(42, ge=0, le=10_000_000),
     generations: int = Query(4, ge=1, le=8),
 ):
-    return AegisynthEngine(seed=seed).run(
-        generations=generations,
-        attack_family=ATTACK_FAMILY,
-    )
+    """Run the bounded synthetic lab, failing closed on engine/runtime failures."""
+    try:
+        return AegisynthEngine(seed=seed).run(
+            generations=generations,
+            attack_family=ATTACK_FAMILY,
+        )
+    except Exception as exc:
+        # User-selectable lab inputs still execute the defensive synthesis engine. Keep
+        # unexpected solver/engine internals out of the public API and expose one stable
+        # availability contract instead of an opaque 500 traceback surface.
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "unavailable",
+                "reason": "lab_runtime_failed",
+                "scope": "synthetic defensive payment-security laboratory",
+            },
+        ) from exc
 
 
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="dashboard")
