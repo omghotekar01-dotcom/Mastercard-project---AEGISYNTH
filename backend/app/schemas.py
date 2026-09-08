@@ -44,6 +44,8 @@ class Transaction(BaseModel):
     def require_canonical_transaction_id(cls, value: str) -> str:
         if any(char.isspace() for char in value):
             raise ValueError("tx_id must not contain whitespace")
+        if not any(char.isascii() and char.isalnum() for char in value):
+            raise ValueError("tx_id must contain at least one ASCII letter or digit")
         return value
 
     @field_validator("attack_family")
