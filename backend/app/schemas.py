@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Literal
 
 from pydantic import BaseModel, Field, StrictBool, field_validator, model_validator
@@ -7,6 +8,7 @@ from pydantic import BaseModel, Field, StrictBool, field_validator, model_valida
 Action = Literal["PASS", "STEP_UP", "REVIEW"]
 ApprovalStatus = Literal["HUMAN_APPROVAL_REQUIRED", "APPROVED", "REJECTED"]
 DeploymentStatus = Literal["NOT_DEPLOYED", "CANARY", "ROLLED_BACK"]
+_CANONICAL_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 
 
 def _reject_boolean_numeric_input(value: object) -> object:
@@ -22,6 +24,15 @@ def _require_canonical_attack_family(value: str) -> str:
         raise ValueError("attack_family must not contain whitespace")
     if value == "benign":
         raise ValueError("attack_family must identify a non-benign synthetic attack family")
+    return value
+
+
+def _require_canonical_id(name: str, value: str) -> str:
+    """Keep durable identities ASCII-safe and aligned across schema and verification boundaries."""
+    if _CANONICAL_ID.fullmatch(value) is None:
+        raise ValueError(f"{name} may contain only ASCII letters, digits, '.', '_', and '-'")
+    if not any(char.isascii() and char.isalnum() for char in value):
+        raise ValueError(f"{name} must contain at least one ASCII letter or digit")
     return value
 
 
@@ -42,11 +53,7 @@ class Transaction(BaseModel):
     @field_validator("tx_id")
     @classmethod
     def require_canonical_transaction_id(cls, value: str) -> str:
-        if any(char.isspace() for char in value):
-            raise ValueError("tx_id must not contain whitespace")
-        if not any(char.isascii() and char.isalnum() for char in value):
-            raise ValueError("tx_id must contain at least one ASCII letter or digit")
-        return value
+        return _require_canonical_id("tx_id", value)
 
     @field_validator("attack_family")
     @classmethod
@@ -98,11 +105,7 @@ class Policy(BaseModel):
     @classmethod
     def require_canonical_policy_id(cls, value: str) -> str:
         """Keep policy identity canonical before it reaches provenance or verification."""
-        if any(char.isspace() for char in value):
-            raise ValueError("policy_id must not contain whitespace")
-        if not any(char.isascii() and char.isalnum() for char in value):
-            raise ValueError("policy_id must contain at least one ASCII letter or digit")
-        return value
+        return _require_canonical_id("policy_id", value)
 
     @field_validator(
         "merchant_age_max",
@@ -136,8 +139,15 @@ class CounterexampleTrace(BaseModel):
     @field_validator("sample_tx_ids")
     @classmethod
     def require_valid_sample_identities(cls, value: list[str]) -> list[str]:
-        if any(not tx_id or len(tx_id) > 64 or any(char.isspace() for char in tx_id) for tx_id in value):
-            raise ValueError("sample_tx_ids must contain canonical transaction IDs of at most 64 characters without whitespace")
+        try:
+            for tx_id in value:
+                if not tx_id or len(tx_id) > 64:
+                    raise ValueError
+                _require_canonical_id("sample_tx_ids entry", tx_id)
+        except (TypeError, ValueError):
+            raise ValueError(
+                "sample_tx_ids must contain canonical ASCII transaction IDs of at most 64 characters"
+            ) from None
         if len(set(value)) != len(value):
             raise ValueError("sample_tx_ids must not contain duplicate transaction IDs")
         return value
