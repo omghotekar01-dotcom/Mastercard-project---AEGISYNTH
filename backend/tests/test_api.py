@@ -105,6 +105,24 @@ def test_reproducible_demo_matches_committed_benchmark():
     assert data['final_policy']['action'] in {'STEP_UP', 'REVIEW'}
 
 
+def test_review_package_fails_closed_with_structured_503(monkeypatch):
+    def broken_package_builder(_result):
+        raise RuntimeError('sensitive solver internals')
+
+    monkeypatch.setattr(main_module, 'build_review_package', broken_package_builder)
+
+    res = client.get('/api/v1/review-package')
+
+    assert res.status_code == 503
+    data = res.json()
+    assert data['detail'] == {
+        'status': 'unavailable',
+        'reason': 'review_package_verification_failed',
+        'scope': 'synthetic defensive payment-security laboratory',
+    }
+    assert 'sensitive solver internals' not in res.text
+
+
 def test_runtime_self_check_passes_all_contracts():
     res = client.get('/api/v1/self-check')
     assert res.status_code == 200
