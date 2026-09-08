@@ -9,18 +9,20 @@ try:
 except ImportError:  # production requirements install z3-solver; verification fails closed without it
     HAS_Z3 = False
 
+from .policy import (
+    _COMPILER_AGE_CODES,
+    _COMPILER_BURST_PERCENT_CODES,
+    _COMPILER_CARD_PERCENT_CODES,
+    _COMPILER_ESTIMATED_LATENCY_MS,
+    _COMPILER_SETTLEMENT_CODES,
+)
 from .schemas import Policy
 
 ALLOWED_ACTIONS = {"PASS", "STEP_UP", "REVIEW"}
 DEFAULT_MAX_POLICY_LATENCY_MS = 5.0
 DEFAULT_Z3_TIMEOUT_MS = 1000
-_COMPILER_ESTIMATED_LATENCY_MS = 0.35
 _CANONICAL_POLICY_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _COMPILER_POLICY_ID = re.compile(r"^ZD-(\d{2})-(\d{3})-(\d{2})-(\d{2})-(\d{2})$")
-_COMPILER_AGE_CODES = frozenset({48, 72, 96, 120, 168, 240})
-_COMPILER_CARD_PERCENT_CODES = frozenset({50, 58, 64, 70, 76})
-_COMPILER_SETTLEMENT_CODES = frozenset({7, 14, 21, 30, 45})
-_COMPILER_BURST_PERCENT_CODES = frozenset({50, 58, 64, 70, 76})
 
 
 def _is_real_number(value: object) -> bool:
