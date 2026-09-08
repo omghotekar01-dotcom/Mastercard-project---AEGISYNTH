@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from app.policy import score_policy
 from app.schemas import Policy, Transaction
@@ -32,16 +33,22 @@ def _tx(tx_id: str, *, fraud: bool) -> Transaction:
 
 
 @pytest.mark.parametrize("tx_id", ["---", "...", "___", "._-"])
+def test_transaction_schema_rejects_punctuation_only_transaction_ids(tx_id: str) -> None:
+    with pytest.raises(ValidationError, match="tx_id must contain at least one ASCII letter or digit"):
+        _tx(tx_id, fraud=False)
+
+
+@pytest.mark.parametrize("tx_id", ["---", "...", "___", "._-"])
 @pytest.mark.parametrize("population", ["benign", "attack"])
-def test_scoring_rejects_punctuation_only_transaction_ids(
+def test_scoring_rejects_schema_bypassed_punctuation_only_transaction_ids(
     tx_id: str, population: str
 ) -> None:
     benign = [_tx("B-1", fraud=False)]
     attacks = [_tx("A-1", fraud=True)]
     if population == "benign":
-        benign = [_tx(tx_id, fraud=False)]
+        benign = [benign[0].model_copy(update={"tx_id": tx_id})]
     else:
-        attacks = [_tx(tx_id, fraud=True)]
+        attacks = [attacks[0].model_copy(update={"tx_id": tx_id})]
 
     with pytest.raises(
         ValueError,
