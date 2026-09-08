@@ -59,6 +59,10 @@ def _scoring_accepts(policy: Policy) -> bool:
         {"temporal_burst_score_min": 0.70},
         {"policy_id": "ZD-04-96-64-21-64"},
         {"policy_id": "ZD-09-096-64-21-64"},
+        {"policy_id": "ZD-04-097-64-21-64", "merchant_age_max": 97},
+        {"policy_id": "ZD-04-096-63-21-64", "first_time_card_ratio_min": 0.63},
+        {"policy_id": "ZD-04-096-64-22-64", "settlement_change_days_max": 22},
+        {"policy_id": "ZD-04-096-64-21-63", "temporal_burst_score_min": 0.63},
     ],
 )
 def test_scoring_and_formal_verification_reject_the_same_stale_compiler_lineage(
