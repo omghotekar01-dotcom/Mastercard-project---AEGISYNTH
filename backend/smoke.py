@@ -10,6 +10,8 @@ from urllib.request import urlopen
 REQUIRED_SELF_CHECKS = {
     "benchmark_runtime_operational",
     "benchmark_seed",
+    "attack_family",
+    "generation_count",
     "baseline_attack_success",
     "final_attack_success",
     "fraud_coverage",
@@ -19,10 +21,14 @@ REQUIRED_SELF_CHECKS = {
     "false_positive_budget",
     "human_approval_required",
     "not_auto_deployed",
+    "artifact_seed",
+    "artifact_attack_family",
+    "artifact_generation_count",
     "artifact_fingerprint",
     "artifact_integrity",
     "dashboard_present",
     "z3_formal_verifier_available",
+    "z3_formal_verifier_operational",
 }
 
 
