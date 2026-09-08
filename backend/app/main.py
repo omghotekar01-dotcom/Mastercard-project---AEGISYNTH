@@ -121,7 +121,13 @@ def run_reproducible_demo():
 def review_package():
     """Return the governed judge-facing handoff, failing closed on trust-boundary errors."""
     try:
-        return build_review_package(_benchmark())
+        package = build_review_package(_benchmark())
+        # Building and verifying are deliberately separate trust boundaries. Never expose
+        # a judge-facing handoff unless the finished artifact independently passes its
+        # fingerprint, provenance replay, compiler-profile, and Z3/business checks.
+        if not verify_review_package(package):
+            raise RuntimeError("review package failed independent verification")
+        return package
     except Exception as exc:
         # Do not leak verifier/runtime internals to the public API. A review handoff
         # without reproducible formal evidence is unavailable, never partially trusted.
