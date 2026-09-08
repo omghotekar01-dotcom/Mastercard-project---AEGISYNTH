@@ -5,6 +5,13 @@ import hashlib
 import hmac
 import json
 
+from .policy import (
+    _COMPILER_AGE_GRID,
+    _COMPILER_BURST_GRID,
+    _COMPILER_CARD_GRID,
+    _COMPILER_ESTIMATED_LATENCY_MS as _COMPILER_LATENCY_MS,
+    _COMPILER_SETTLEMENT_GRID,
+)
 from .schemas import CompilationProvenance, LabResult, ReviewPackage
 from .simulator import SUPPORTED_ATTACK_FAMILIES
 from .verification import (
@@ -23,12 +30,7 @@ SYNTHETIC_ONLY = True
 PRODUCTION_CLAIM = False
 _METRIC_PRECISION = 4
 _METRIC_ULP = Decimal("0.0001")
-_COMPILER_AGE_GRID = {48, 72, 96, 120, 168, 240}
-_COMPILER_CARD_GRID = {0.50, 0.58, 0.64, 0.70, 0.76}
-_COMPILER_SETTLEMENT_GRID = {7, 14, 21, 30, 45}
-_COMPILER_BURST_GRID = {0.50, 0.58, 0.64, 0.70, 0.76}
 _COMPILER_ACTION = "STEP_UP"
-_COMPILER_LATENCY_MS = 0.35
 
 
 def _metric_delta(observed: float, expected: float) -> Decimal:
