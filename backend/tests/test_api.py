@@ -105,6 +105,24 @@ def test_reproducible_demo_matches_committed_benchmark():
     assert data['final_policy']['action'] in {'STEP_UP', 'REVIEW'}
 
 
+def test_reproducible_demo_fails_closed_with_structured_503(monkeypatch):
+    def broken_benchmark():
+        raise RuntimeError('sensitive benchmark internals')
+
+    monkeypatch.setattr(main_module, '_benchmark', broken_benchmark)
+
+    res = client.get('/api/v1/demo')
+
+    assert res.status_code == 503
+    data = res.json()
+    assert data['detail'] == {
+        'status': 'unavailable',
+        'reason': 'benchmark_replay_failed',
+        'scope': 'synthetic defensive payment-security laboratory',
+    }
+    assert 'sensitive benchmark internals' not in res.text
+
+
 def test_review_package_fails_closed_with_structured_503(monkeypatch):
     def broken_package_builder(_result):
         raise RuntimeError('sensitive solver internals')
