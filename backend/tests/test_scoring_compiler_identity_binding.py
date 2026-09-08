@@ -94,6 +94,21 @@ def test_scoring_rejects_malformed_identity_that_claims_compiler_lineage():
         _score(policy)
 
 
+@pytest.mark.parametrize(
+    "policy_id",
+    [
+        "zd-01-048-50-07-50",
+        "Zd-01-048-50-07-50",
+        "zD-01-048-50-07-50",
+    ],
+)
+def test_scoring_rejects_case_varied_compiler_prefixes_instead_of_treating_them_as_generic(policy_id):
+    policy = _compiled_policy().model_copy(update={"policy_id": policy_id})
+
+    with pytest.raises(ValueError, match="scored compiler policy has malformed ZD policy_id"):
+        _score(policy)
+
+
 def test_scoring_rejects_out_of_range_generation_encoded_in_compiler_identity():
     policy = _compiled_policy().model_copy(update={"policy_id": "ZD-09-048-50-07-50"})
 
