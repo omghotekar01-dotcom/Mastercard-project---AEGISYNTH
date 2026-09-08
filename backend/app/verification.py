@@ -55,12 +55,13 @@ def _validate_compiler_identity_binding(policy: Policy) -> tuple[bool, list[str]
     """Bind compiler-style ZD identities to the semantics emitted by the compiler.
 
     Generic external policy IDs remain supported, but any ID claiming compiler lineage via
-    the ``ZD-`` prefix must use the compiler's exact identity layout, retain the compiler's
-    STEP_UP action and latency claim, and describe the actual policy thresholds presented to
-    the verifier. This prevents a policy artifact from being mutated after synthesis while
-    retaining an audit identity for different semantics or a fabricated latency budget claim.
+    the ``ZD-`` prefix (case-insensitive) must use the compiler's exact canonical identity
+    layout, retain the compiler's STEP_UP action and latency claim, and describe the actual
+    policy thresholds presented to the verifier. This prevents a policy artifact from being
+    mutated after synthesis while retaining an audit identity for different semantics or a
+    fabricated latency budget claim, including through prefix case variation.
     """
-    if not policy.policy_id.startswith("ZD-"):
+    if not policy.policy_id.upper().startswith("ZD-"):
         return True, []
 
     match = _COMPILER_POLICY_ID.fullmatch(policy.policy_id)
