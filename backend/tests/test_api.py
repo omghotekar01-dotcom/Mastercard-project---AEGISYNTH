@@ -122,6 +122,25 @@ def test_runtime_self_check_passes_all_contracts():
     assert 'synthetic' in data['scope'].lower()
 
 
+def test_runtime_self_check_reports_structured_503_when_benchmark_runtime_raises(monkeypatch):
+    def broken_benchmark():
+        raise RuntimeError('benchmark unavailable')
+
+    def verifier_must_not_run():
+        raise AssertionError('self-check must stop after benchmark runtime failure')
+
+    monkeypatch.setattr(main_module, '_benchmark', broken_benchmark)
+    monkeypatch.setattr(main_module, '_formal_verifier_operational', verifier_must_not_run)
+
+    res = client.get('/api/v1/self-check')
+
+    assert res.status_code == 503
+    data = res.json()
+    assert data['status'] == 'fail'
+    assert data['checks'] == {'benchmark_runtime_operational': False}
+    assert 'synthetic' in data['scope'].lower()
+
+
 def test_runtime_self_check_fails_closed_on_generation_provenance_drift(monkeypatch):
     benchmark = main_module._benchmark()
     monkeypatch.setattr(main_module, '_benchmark', lambda: benchmark)
