@@ -23,12 +23,10 @@ def test_compiler_provenance_contract_is_shared_across_scoring_verification_and_
         == verification_module._COMPILER_ESTIMATED_LATENCY_MS
     )
 
-    assert frozenset(policy_module._COMPILER_AGE_GRID) == frozenset(artifact_module._COMPILER_AGE_GRID)
-    assert frozenset(policy_module._COMPILER_CARD_GRID) == frozenset(artifact_module._COMPILER_CARD_GRID)
-    assert frozenset(policy_module._COMPILER_SETTLEMENT_GRID) == frozenset(
-        artifact_module._COMPILER_SETTLEMENT_GRID
-    )
-    assert frozenset(policy_module._COMPILER_BURST_GRID) == frozenset(
-        artifact_module._COMPILER_BURST_GRID
-    )
-    assert policy_module._COMPILER_ESTIMATED_LATENCY_MS == artifact_module._COMPILER_LATENCY_MS
+    # Review provenance must consume the compiler's actual contract objects, not copied
+    # literals that can silently drift while still passing value-only parity tests.
+    assert artifact_module._COMPILER_AGE_GRID is policy_module._COMPILER_AGE_GRID
+    assert artifact_module._COMPILER_CARD_GRID is policy_module._COMPILER_CARD_GRID
+    assert artifact_module._COMPILER_SETTLEMENT_GRID is policy_module._COMPILER_SETTLEMENT_GRID
+    assert artifact_module._COMPILER_BURST_GRID is policy_module._COMPILER_BURST_GRID
+    assert artifact_module._COMPILER_LATENCY_MS == policy_module._COMPILER_ESTIMATED_LATENCY_MS
