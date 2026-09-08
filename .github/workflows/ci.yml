@@ -96,10 +96,14 @@ jobs:
           from app.engine import AegisynthEngine
 
           expected = json.loads(Path("../submission/benchmark_seed42.json").read_text())
-          r = AegisynthEngine(seed=expected["seed"]).run(generations=expected["generations"])
+          r = AegisynthEngine(seed=expected["seed"]).run(
+              generations=expected["generations"],
+              attack_family=expected["attack_family"],
+          )
 
           assert r.seed == expected["seed"]
           assert r.attack_family == expected["attack_family"]
+          assert len(r.iterations) == expected["generations"]
           assert r.baseline_attack_success_rate == expected["baseline_attack_success_rate"]
           assert r.final_attack_success_rate == expected["final_attack_success_rate"]
           assert r.metrics.final_fraud_coverage == expected["final_fraud_family_coverage"]
