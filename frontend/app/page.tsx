@@ -18,11 +18,17 @@ export default function Home(){
     <section className="hero">
       <div className="eyebrow"><Sparkles size={15}/> Mastercard AI Defence Lab • GFF 2026</div>
       <h1>Turn tomorrow&apos;s fraud into<br/><em>verified defence.</em></h1>
-      <p>AEGISYNTH converts a novel payment attack into a compact, explainable policy by red-teaming candidates, feeding bypasses back as counterexamples, and formally checking safety constraints before deployment.</p>
+      <p>AEGISYNTH converts a novel payment attack into a compact, explainable policy by red-teaming candidates, feeding bypasses back as counterexamples, and formally checking safety constraints before any human-governed deployment decision.</p>
       <div className="actions"><button onClick={launch} disabled={running}><Play size={18}/>{running?"Running adversarial lab…":"Release zero-day simulation"}</button><span>No real cards • No real merchants • No paid API required</span></div>
     </section>
     <section className="pipeline">
       {[ [FlaskConical,"01","SIMULATE","Synthetic attack family"], [BrainCircuit,"02","SYNTHESIZE","Compile minimal control"], [TriangleAlert,"03","COUNTEREXAMPLE","Mutate to find bypasses"], [ShieldCheck,"04","VERIFY","Safety + business constraints"] ].map(([Icon,n,t,d]:any)=><div className="step" key={n}><Icon size={20}/><small>{n}</small><b>{t}</b><span>{d}</span></div>)}
+    </section>
+    <section className="verify" aria-label="Judge evidence boundary">
+      <h3>Judge evidence boundary</h3>
+      <div><CheckCircle2 size={16}/>Synthetic-only evidence — no real payment credentials or production transaction data.</div>
+      <div><CheckCircle2 size={16}/>Human approval required — compiled controls are review artifacts, not autonomous payment decisions.</div>
+      <div><CheckCircle2 size={16}/>Not deployed — formal verification demonstrates guardrail compliance inside the lab, not production efficacy.</div>
     </section>
     {error&&<div className="error">{error}</div>}
     {!data?<section className="empty"><Activity size={34}/><h2>Live adversarial lab is ready.</h2><p>Launch a safe synthetic zero-day to watch AEGISYNTH compile and verify a defence package.</p></section>:
