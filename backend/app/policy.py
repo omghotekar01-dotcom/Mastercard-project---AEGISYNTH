@@ -326,7 +326,7 @@ class DefenceCompiler:
                 settlement_change_days_max=settle,
                 temporal_burst_score_min=burst,
                 action="STEP_UP",
-                estimated_latency_ms=0.35,
+                estimated_latency_ms=_COMPILER_ESTIMATED_LATENCY_MS,
             )
             s = score_policy(candidate, benign, attacks)
             reported_fpr = round(s.fpr, 4)
