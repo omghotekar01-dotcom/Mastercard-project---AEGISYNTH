@@ -118,8 +118,14 @@ def _validate_policy_definition(policy: Policy) -> None:
 
 
 def _validate_compiler_identity_binding(policy: Policy) -> None:
-    """Reject stale compiler identities before their metrics can be scored or reported."""
-    if not policy.policy_id.startswith("ZD-"):
+    """Reject stale compiler identities before their metrics can be scored or reported.
+
+    Any ID that claims compiler lineage via the ``ZD-`` prefix, regardless of prefix case,
+    must use the exact canonical compiler identity. This keeps direct benchmark scoring
+    aligned with formal verification and prevents case variation from downgrading a compiler
+    artifact into a generic external policy.
+    """
+    if not policy.policy_id.upper().startswith("ZD-"):
         return
 
     match = _COMPILER_POLICY_ID.fullmatch(policy.policy_id)
