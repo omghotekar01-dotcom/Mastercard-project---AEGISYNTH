@@ -98,6 +98,8 @@ class Policy(BaseModel):
         """Keep policy identity canonical before it reaches provenance or verification."""
         if any(char.isspace() for char in value):
             raise ValueError("policy_id must not contain whitespace")
+        if not any(char.isascii() and char.isalnum() for char in value):
+            raise ValueError("policy_id must contain at least one ASCII letter or digit")
         return value
 
     @field_validator(
