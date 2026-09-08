@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI, Query, Response
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -119,7 +119,20 @@ def run_reproducible_demo():
 
 @app.get("/api/v1/review-package", response_model=ReviewPackage)
 def review_package():
-    return build_review_package(_benchmark())
+    """Return the governed judge-facing handoff, failing closed on trust-boundary errors."""
+    try:
+        return build_review_package(_benchmark())
+    except Exception as exc:
+        # Do not leak verifier/runtime internals to the public API. A review handoff
+        # without reproducible formal evidence is unavailable, never partially trusted.
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "unavailable",
+                "reason": "review_package_verification_failed",
+                "scope": "synthetic defensive payment-security laboratory",
+            },
+        ) from exc
 
 
 @app.get("/api/v1/self-check")
