@@ -273,6 +273,12 @@ class CompilationProvenance(BaseModel):
     max_false_positive_rate: float = Field(ge=0, le=1)
     max_policy_latency_ms: float = Field(gt=0, allow_inf_nan=False)
 
+    @field_validator("compiler_id", "verifier_id")
+    @classmethod
+    def require_canonical_provenance_ids(cls, value: str, info) -> str:
+        """Prevent ambiguous Unicode or delimiter-bearing tool identities in review provenance."""
+        return _require_canonical_id(info.field_name, value)
+
     @field_validator(
         "max_false_positive_rate",
         "max_policy_latency_ms",
