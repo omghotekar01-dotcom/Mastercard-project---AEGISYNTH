@@ -95,6 +95,8 @@ def test_reproducible_demo_matches_committed_benchmark():
     assert res.status_code == 200
     data = res.json()
     assert data['seed'] == 42
+    assert data['attack_family'] == 'ghost_merchant_swarm'
+    assert len(data['iterations']) == 4
     assert data['baseline_attack_success_rate'] == 0.5383
     assert data['final_attack_success_rate'] == 0.0743
     assert data['metrics']['final_fraud_coverage'] == 0.9257

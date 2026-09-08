@@ -62,6 +62,8 @@ def run(base_url: str) -> None:
     demo_status, demo = fetch_json(base_url, "/api/v1/demo")
     assert demo_status == 200, "reproducible demo endpoint failed"
     assert demo.get("seed") == 42, "demo seed drifted from the submitted benchmark contract"
+    assert demo.get("attack_family") == "ghost_merchant_swarm", "demo attack family drifted from the submitted benchmark contract"
+    assert len(demo.get("iterations", [])) == 4, "demo generation count drifted from the submitted benchmark contract"
     assert demo.get("final_policy", {}).get("verified") is True, "demo policy is not verified"
     assert demo.get("final_policy", {}).get("action") in {"STEP_UP", "REVIEW"}, "demo emitted an unsupported action"
 
