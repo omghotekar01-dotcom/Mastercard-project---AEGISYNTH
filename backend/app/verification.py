@@ -17,6 +17,10 @@ DEFAULT_Z3_TIMEOUT_MS = 1000
 _COMPILER_ESTIMATED_LATENCY_MS = 0.35
 _CANONICAL_POLICY_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _COMPILER_POLICY_ID = re.compile(r"^ZD-(\d{2})-(\d{3})-(\d{2})-(\d{2})-(\d{2})$")
+_COMPILER_AGE_CODES = frozenset({48, 72, 96, 120, 168, 240})
+_COMPILER_CARD_PERCENT_CODES = frozenset({50, 58, 64, 70, 76})
+_COMPILER_SETTLEMENT_CODES = frozenset({7, 14, 21, 30, 45})
+_COMPILER_BURST_PERCENT_CODES = frozenset({50, 58, 64, 70, 76})
 
 
 def _is_real_number(value: object) -> bool:
@@ -52,14 +56,13 @@ def _validate_policy_identity(policy: Policy) -> tuple[bool, list[str]]:
 
 
 def _validate_compiler_identity_binding(policy: Policy) -> tuple[bool, list[str]]:
-    """Bind compiler-style ZD identities to the semantics emitted by the compiler.
+    """Bind compiler-style ZD identities to semantics the native compiler can emit.
 
     Generic external policy IDs remain supported, but any ID claiming compiler lineage via
     the ``ZD-`` prefix (case-insensitive) must use the compiler's exact canonical identity
-    layout, retain the compiler's STEP_UP action and latency claim, and describe the actual
-    policy thresholds presented to the verifier. This prevents a policy artifact from being
-    mutated after synthesis while retaining an audit identity for different semantics or a
-    fabricated latency budget claim, including through prefix case variation.
+    layout, retain the compiler's STEP_UP action and latency claim, encode one of the native
+    search-grid threshold tuples, and describe the actual policy thresholds presented to the
+    verifier. This prevents post-synthesis mutation and fabricated compiler provenance.
     """
     if not policy.policy_id.upper().startswith("ZD-"):
         return True, []
@@ -71,6 +74,15 @@ def _validate_compiler_identity_binding(policy: Policy) -> tuple[bool, list[str]
     generation, age, card_percent, settle, burst_percent = (int(value) for value in match.groups())
     if not 1 <= generation <= 8:
         return False, ["Compiler policy identity invalid: generation must be within [1, 8]"]
+    if (
+        age not in _COMPILER_AGE_CODES
+        or card_percent not in _COMPILER_CARD_PERCENT_CODES
+        or settle not in _COMPILER_SETTLEMENT_CODES
+        or burst_percent not in _COMPILER_BURST_PERCENT_CODES
+    ):
+        return False, [
+            "Compiler policy identity invalid: thresholds are outside the native compiler search grid"
+        ]
     if policy.action != "STEP_UP":
         return False, [
             "Compiler policy identity mismatch: ZD policies must retain the compiler STEP_UP action"
