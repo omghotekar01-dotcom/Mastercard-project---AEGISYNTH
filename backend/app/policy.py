@@ -17,6 +17,14 @@ _COMPILER_ESTIMATED_LATENCY_MS = 0.35
 _CANONICAL_POLICY_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _CANONICAL_TX_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _COMPILER_POLICY_ID = re.compile(r"^ZD-(\d{2})-(\d{3})-(\d{2})-(\d{2})-(\d{2})$")
+_COMPILER_AGE_GRID = (48, 72, 96, 120, 168, 240)
+_COMPILER_CARD_GRID = (0.50, 0.58, 0.64, 0.70, 0.76)
+_COMPILER_SETTLEMENT_GRID = (7, 14, 21, 30, 45)
+_COMPILER_BURST_GRID = (0.50, 0.58, 0.64, 0.70, 0.76)
+_COMPILER_AGE_CODES = frozenset(_COMPILER_AGE_GRID)
+_COMPILER_CARD_PERCENT_CODES = frozenset(int(Decimal(str(value)) * 100) for value in _COMPILER_CARD_GRID)
+_COMPILER_SETTLEMENT_CODES = frozenset(_COMPILER_SETTLEMENT_GRID)
+_COMPILER_BURST_PERCENT_CODES = frozenset(int(Decimal(str(value)) * 100) for value in _COMPILER_BURST_GRID)
 
 @dataclass
 class Score:
@@ -118,12 +126,13 @@ def _validate_policy_definition(policy: Policy) -> None:
 
 
 def _validate_compiler_identity_binding(policy: Policy) -> None:
-    """Reject stale compiler identities before their metrics can be scored or reported.
+    """Reject stale or fabricated compiler identities before metrics can be scored or reported.
 
     Any ID that claims compiler lineage via the ``ZD-`` prefix, regardless of prefix case,
-    must use the exact canonical compiler identity. This keeps direct benchmark scoring
-    aligned with formal verification and prevents case variation from downgrading a compiler
-    artifact into a generic external policy.
+    must use the exact canonical compiler identity, retain compiler action/latency claims,
+    encode a threshold tuple from the native search grid, and match the policy semantics.
+    This keeps benchmark scoring aligned with formal verification and prevents a mutated
+    off-grid policy from presenting itself as native compiler output.
     """
     if not policy.policy_id.upper().startswith("ZD-"):
         return
@@ -135,6 +144,13 @@ def _validate_compiler_identity_binding(policy: Policy) -> None:
     generation, age, card_percent, settle, burst_percent = (int(value) for value in match.groups())
     if not 1 <= generation <= 8:
         raise ValueError("scored compiler policy generation must be within [1, 8]")
+    if (
+        age not in _COMPILER_AGE_CODES
+        or card_percent not in _COMPILER_CARD_PERCENT_CODES
+        or settle not in _COMPILER_SETTLEMENT_CODES
+        or burst_percent not in _COMPILER_BURST_PERCENT_CODES
+    ):
+        raise ValueError("scored compiler policy thresholds are outside the native compiler search grid")
     if policy.action != "STEP_UP":
         raise ValueError("scored compiler policy must retain the compiler STEP_UP action")
     if (
@@ -296,13 +312,13 @@ class DefenceCompiler:
             raise ValueError("generation must be an integer within [1, 8]")
         _validate_evaluation_populations(benign, attacks)
 
-        age_grid = [48, 72, 96, 120, 168, 240]
-        card_grid = [0.50, 0.58, 0.64, 0.70, 0.76]
-        settlement_grid = [7, 14, 21, 30, 45]
-        burst_grid = [0.50, 0.58, 0.64, 0.70, 0.76]
-
         best: tuple[float, Policy] | None = None
-        for age, card, settle, burst in product(age_grid, card_grid, settlement_grid, burst_grid):
+        for age, card, settle, burst in product(
+            _COMPILER_AGE_GRID,
+            _COMPILER_CARD_GRID,
+            _COMPILER_SETTLEMENT_GRID,
+            _COMPILER_BURST_GRID,
+        ):
             candidate = Policy(
                 policy_id=_policy_id(generation, age, card, settle, burst),
                 merchant_age_max=age,
