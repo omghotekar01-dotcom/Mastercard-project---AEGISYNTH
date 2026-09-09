@@ -7,10 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .artifact import build_review_package, verify_review_package
-from .contracts import COMPILER_GENERATION_MAX, COMPILER_GENERATION_MIN
+from .contracts import (
+    COMPILER_GENERATION_MAX,
+    COMPILER_GENERATION_MIN,
+    DEFAULT_MAX_FALSE_POSITIVE_RATE,
+)
 from .engine import AegisynthEngine
 from .schemas import LabResult, Policy, ReviewPackage
-from .verification import HAS_Z3, verify_policy
+from .verification import DEFAULT_MAX_POLICY_LATENCY_MS, HAS_Z3, verify_policy
 
 APP_VERSION = "1.4.0"
 BENCHMARK_SEED = 42
@@ -67,7 +71,12 @@ def _benchmark_contract_checks(result: LabResult) -> dict[str, bool]:
         ),
         "policy_verified": result.final_policy.verified is True,
         "responsible_action": result.final_policy.action in {"STEP_UP", "REVIEW"},
-        "false_positive_budget": result.final_policy.false_positive_rate <= 0.02,
+        "false_positive_budget": (
+            result.final_policy.false_positive_rate <= DEFAULT_MAX_FALSE_POSITIVE_RATE
+        ),
+        "latency_budget": (
+            result.final_policy.estimated_latency_ms <= DEFAULT_MAX_POLICY_LATENCY_MS
+        ),
     }
 
 
