@@ -45,6 +45,26 @@ def _benchmark() -> LabResult:
     )
 
 
+def _benchmark_replay_operational() -> bool:
+    """Require readiness to reproduce the committed judge-facing benchmark contract."""
+    try:
+        result = _benchmark()
+    except Exception:
+        return False
+    return (
+        result.seed == BENCHMARK_SEED
+        and result.attack_family == ATTACK_FAMILY
+        and len(result.iterations) == BENCHMARK_GENERATIONS
+        and result.baseline_attack_success_rate == BENCHMARK_CONTRACT["baseline_attack_success_rate"]
+        and result.final_attack_success_rate == BENCHMARK_CONTRACT["final_attack_success_rate"]
+        and result.metrics.final_fraud_coverage == BENCHMARK_CONTRACT["final_fraud_coverage"]
+        and result.metrics.benign_acceptance_rate == BENCHMARK_CONTRACT["benign_acceptance_rate"]
+        and result.final_policy.verified is True
+        and result.final_policy.action in {"STEP_UP", "REVIEW"}
+        and result.final_policy.false_positive_rate <= 0.02
+    )
+
+
 def _formal_verifier_operational() -> bool:
     """Exercise the real verifier, not merely the Z3 import path, for runtime readiness."""
     if not HAS_Z3:
@@ -79,9 +99,11 @@ def health():
 @app.get("/ready")
 def ready(response: Response):
     """Fail-closed readiness gate for capabilities promised by the demo."""
+    benchmark_operational = _benchmark_replay_operational()
     verifier_operational = _formal_verifier_operational()
     checks = {
         "dashboard_present": (STATIC_DIR / "index.html").exists(),
+        "benchmark_replay_operational": benchmark_operational,
         "z3_formal_verifier_available": HAS_Z3,
         "z3_formal_verifier_operational": verifier_operational,
     }
