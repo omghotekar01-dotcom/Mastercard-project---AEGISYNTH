@@ -66,7 +66,23 @@ def _drift_responsible_action(result):
 def _drift_false_positive_budget(result):
     return result.model_copy(
         update={
-            "final_policy": result.final_policy.model_copy(update={"false_positive_rate": 0.0201})
+            "final_policy": result.final_policy.model_copy(
+                update={
+                    "false_positive_rate": main_module.DEFAULT_MAX_FALSE_POSITIVE_RATE + 0.0001
+                }
+            )
+        }
+    )
+
+
+def _drift_latency_budget(result):
+    return result.model_copy(
+        update={
+            "final_policy": result.final_policy.model_copy(
+                update={
+                    "estimated_latency_ms": main_module.DEFAULT_MAX_POLICY_LATENCY_MS + 0.0001
+                }
+            )
         }
     )
 
@@ -84,6 +100,7 @@ def _drift_false_positive_budget(result):
         (_drift_policy_verified, "policy_verified"),
         (_drift_responsible_action, "responsible_action"),
         (_drift_false_positive_budget, "false_positive_budget"),
+        (_drift_latency_budget, "latency_budget"),
     ],
     ids=[
         "seed",
@@ -96,6 +113,7 @@ def _drift_false_positive_budget(result):
         "policy-verified",
         "responsible-action",
         "false-positive-budget",
+        "latency-budget",
     ],
 )
 def test_readiness_and_self_check_fail_closed_on_same_committed_benchmark_drift(
