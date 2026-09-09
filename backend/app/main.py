@@ -11,10 +11,11 @@ from .contracts import (
     COMPILER_GENERATION_MAX,
     COMPILER_GENERATION_MIN,
     DEFAULT_MAX_FALSE_POSITIVE_RATE,
+    DEFAULT_MAX_POLICY_LATENCY_MS,
 )
 from .engine import AegisynthEngine
 from .schemas import LabResult, Policy, ReviewPackage
-from .verification import DEFAULT_MAX_POLICY_LATENCY_MS, HAS_Z3, verify_policy
+from .verification import HAS_Z3, verify_policy
 
 APP_VERSION = "1.4.0"
 BENCHMARK_SEED = 42
