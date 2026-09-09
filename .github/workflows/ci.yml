@@ -198,4 +198,5 @@ jobs:
           grep -Fqi 'X-Frame-Options: DENY' /tmp/aegisynth-headers.txt
           grep -Fqi 'Referrer-Policy: strict-origin-when-cross-origin' /tmp/aegisynth-headers.txt
           grep -Fqi 'Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()' /tmp/aegisynth-headers.txt
+          grep -Fqi "Content-Security-Policy: base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'" /tmp/aegisynth-headers.txt
           echo 'production dashboard security-header contract verified'
