@@ -65,6 +65,17 @@ def _benchmark_replay_operational() -> bool:
     )
 
 
+def _review_package_operational() -> bool:
+    """Require readiness to prove the governed judge-facing handoff can be verified."""
+    try:
+        package = build_review_package(_benchmark())
+        return verify_review_package(package)
+    except Exception:
+        # Review-package construction and verification are trust boundaries. Readiness
+        # must fail closed without exposing internal verifier or provenance details.
+        return False
+
+
 def _formal_verifier_operational() -> bool:
     """Exercise the real verifier, not merely the Z3 import path, for runtime readiness."""
     if not HAS_Z3:
@@ -101,9 +112,11 @@ def ready(response: Response):
     """Fail-closed readiness gate for capabilities promised by the demo."""
     benchmark_operational = _benchmark_replay_operational()
     verifier_operational = _formal_verifier_operational()
+    review_package_operational = _review_package_operational()
     checks = {
         "dashboard_present": (STATIC_DIR / "index.html").exists(),
         "benchmark_replay_operational": benchmark_operational,
+        "review_package_operational": review_package_operational,
         "z3_formal_verifier_available": HAS_Z3,
         "z3_formal_verifier_operational": verifier_operational,
     }
