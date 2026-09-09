@@ -2,6 +2,8 @@ from __future__ import annotations
 import math
 import re
 from .contracts import (
+    COMPILER_GENERATION_MAX,
+    COMPILER_GENERATION_MIN,
     POLICY_MERCHANT_AGE_HOURS_MAX,
     POLICY_MERCHANT_AGE_HOURS_MIN,
     POLICY_TEMPORAL_BURST_SCORE_MAX,
@@ -75,8 +77,14 @@ class AegisynthEngine:
     @staticmethod
     def _validate_generations(generations: object) -> int:
         """Keep direct engine runs inside the supported, review-package-safe generation domain."""
-        if type(generations) is not int or not 1 <= generations <= 8:
-            raise ValueError("generations must be an integer within [1, 8]")
+        if (
+            type(generations) is not int
+            or not COMPILER_GENERATION_MIN <= generations <= COMPILER_GENERATION_MAX
+        ):
+            raise ValueError(
+                f"generations must be an integer within "
+                f"[{COMPILER_GENERATION_MIN}, {COMPILER_GENERATION_MAX}]"
+            )
         return generations
 
     def run(self, generations: int = 4, attack_family: str = "ghost_merchant_swarm") -> LabResult:
