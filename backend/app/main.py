@@ -70,19 +70,15 @@ def _benchmark_contract_checks(result: LabResult) -> dict[str, bool]:
     }
 
 
-def _benchmark_replay_operational() -> bool:
-    """Require readiness to reproduce the committed judge-facing benchmark contract."""
-    try:
-        result = _benchmark()
-    except Exception:
-        return False
+def _benchmark_replay_operational(result: LabResult) -> bool:
+    """Require readiness to match the committed benchmark and safety contract."""
     return all(_benchmark_contract_checks(result).values())
 
 
-def _review_package_operational() -> bool:
+def _review_package_operational(result: LabResult) -> bool:
     """Require readiness to prove the governed judge-facing handoff can be verified."""
     try:
-        package = build_review_package(_benchmark())
+        package = build_review_package(result)
         return verify_review_package(package)
     except Exception:
         # Review-package construction and verification are trust boundaries. Readiness
@@ -124,9 +120,17 @@ def health():
 @app.get("/ready")
 def ready(response: Response):
     """Fail-closed readiness gate for capabilities promised by the demo."""
-    benchmark_operational = _benchmark_replay_operational()
+    try:
+        result = _benchmark()
+        benchmark_operational = _benchmark_replay_operational(result)
+        review_package_operational = _review_package_operational(result)
+    except Exception:
+        # One authoritative replay feeds every benchmark-derived readiness check.
+        # Any replay/runtime failure makes both capabilities unavailable.
+        benchmark_operational = False
+        review_package_operational = False
+
     verifier_operational = _formal_verifier_operational()
-    review_package_operational = _review_package_operational()
     checks = {
         "dashboard_present": (STATIC_DIR / "index.html").exists(),
         "benchmark_replay_operational": benchmark_operational,
