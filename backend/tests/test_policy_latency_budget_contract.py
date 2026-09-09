@@ -1,7 +1,8 @@
 import inspect
 
 from app import main as main_module
-from app.verification import DEFAULT_MAX_POLICY_LATENCY_MS, verify_policy
+from app.contracts import DEFAULT_MAX_POLICY_LATENCY_MS
+from app.verification import verify_policy
 
 
 def test_default_policy_latency_budget_matches_submitted_contract():
@@ -9,7 +10,7 @@ def test_default_policy_latency_budget_matches_submitted_contract():
     assert DEFAULT_MAX_POLICY_LATENCY_MS > 0
 
 
-def test_verifier_default_uses_committed_latency_budget():
+def test_verifier_default_uses_shared_latency_budget():
     signature = inspect.signature(verify_policy)
     assert signature.parameters["max_latency_ms"].default == DEFAULT_MAX_POLICY_LATENCY_MS
 
