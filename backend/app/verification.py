@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import re
+import threading
 
 try:
     from z3 import And, Real, Solver, sat, unsat
@@ -36,6 +37,7 @@ DEFAULT_MAX_POLICY_LATENCY_MS = 5.0
 DEFAULT_Z3_TIMEOUT_MS = 1000
 _CANONICAL_POLICY_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _COMPILER_POLICY_ID = re.compile(r"^ZD-(\d{2})-(\d{3})-(\d{2})-(\d{2})-(\d{2})$")
+_Z3_LOCK = threading.Lock()
 
 
 def _is_real_number(value: object) -> bool:
@@ -225,31 +227,36 @@ def verify_policy(
         return False, ["Formal verification unavailable: z3-solver is required"]
 
     try:
-        age = Real("age")
-        card = Real("card")
-        settle = Real("settle")
-        burst = Real("burst")
-        solver = Solver()
-        solver.set(timeout=DEFAULT_Z3_TIMEOUT_MS)
-        solver.add(And(age >= POLICY_MERCHANT_AGE_HOURS_MIN, age <= POLICY_MERCHANT_AGE_HOURS_MAX))
-        solver.add(And(card >= POLICY_FIRST_TIME_CARD_RATIO_MIN, card <= POLICY_FIRST_TIME_CARD_RATIO_MAX))
-        solver.add(
-            And(
-                settle >= POLICY_SETTLEMENT_CHANGE_DAYS_MIN,
-                settle <= POLICY_SETTLEMENT_CHANGE_DAYS_MAX,
+        # Z3's default global context is process-wide. FastAPI executes synchronous
+        # endpoints in a worker thread pool, so concurrent readiness/demo requests can
+        # otherwise enter the native solver at the same time and crash the process.
+        # Keep the formal boundary fail-closed by serializing access to that context.
+        with _Z3_LOCK:
+            age = Real("age")
+            card = Real("card")
+            settle = Real("settle")
+            burst = Real("burst")
+            solver = Solver()
+            solver.set(timeout=DEFAULT_Z3_TIMEOUT_MS)
+            solver.add(And(age >= POLICY_MERCHANT_AGE_HOURS_MIN, age <= POLICY_MERCHANT_AGE_HOURS_MAX))
+            solver.add(And(card >= POLICY_FIRST_TIME_CARD_RATIO_MIN, card <= POLICY_FIRST_TIME_CARD_RATIO_MAX))
+            solver.add(
+                And(
+                    settle >= POLICY_SETTLEMENT_CHANGE_DAYS_MIN,
+                    settle <= POLICY_SETTLEMENT_CHANGE_DAYS_MAX,
+                )
             )
-        )
-        solver.add(
-            And(
-                burst >= POLICY_TEMPORAL_BURST_SCORE_MIN,
-                burst <= POLICY_TEMPORAL_BURST_SCORE_MAX,
+            solver.add(
+                And(
+                    burst >= POLICY_TEMPORAL_BURST_SCORE_MIN,
+                    burst <= POLICY_TEMPORAL_BURST_SCORE_MAX,
+                )
             )
-        )
-        solver.add(age <= policy.merchant_age_max)
-        solver.add(card >= policy.first_time_card_ratio_min)
-        solver.add(settle <= policy.settlement_change_days_max)
-        solver.add(burst >= policy.temporal_burst_score_min)
-        solver_result = solver.check()
+            solver.add(age <= policy.merchant_age_max)
+            solver.add(card >= policy.first_time_card_ratio_min)
+            solver.add(settle <= policy.settlement_change_days_max)
+            solver.add(burst >= policy.temporal_burst_score_min)
+            solver_result = solver.check()
     except Exception:
         return False, ["Formal verification failed closed: Z3 runtime error"]
 
