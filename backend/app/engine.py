@@ -1,12 +1,22 @@
 from __future__ import annotations
 import math
 import re
+from .contracts import (
+    POLICY_MERCHANT_AGE_HOURS_MAX,
+    POLICY_MERCHANT_AGE_HOURS_MIN,
+    POLICY_TEMPORAL_BURST_SCORE_MAX,
+    POLICY_TEMPORAL_BURST_SCORE_MIN,
+)
 from .schemas import LabResult, IterationResult, Policy, CounterexampleTrace
 from .simulator import PaymentWorld, SUPPORTED_ATTACK_FAMILIES
 from .policy import DefenceCompiler, score_policy, matches, _validate_max_fpr
 from .verification import verify_policy
 
 _CANONICAL_TX_ID = re.compile(r"^[A-Za-z0-9._-]+$")
+_BASELINE_FEATURE_BOUNDS = {
+    "merchant_age_hours": (POLICY_MERCHANT_AGE_HOURS_MIN, POLICY_MERCHANT_AGE_HOURS_MAX),
+    "temporal_burst_score": (POLICY_TEMPORAL_BURST_SCORE_MIN, POLICY_TEMPORAL_BURST_SCORE_MAX),
+}
 
 
 class AegisynthEngine:
@@ -49,11 +59,7 @@ class AegisynthEngine:
                     "baseline attack evidence contains an unsupported synthetic attack family"
                 )
 
-            feature_bounds = {
-                "merchant_age_hours": (0.0, float(24 * 365 * 20)),
-                "temporal_burst_score": (0.0, 1.0),
-            }
-            for feature, (minimum, maximum) in feature_bounds.items():
+            for feature, (minimum, maximum) in _BASELINE_FEATURE_BOUNDS.items():
                 value = getattr(tx, feature)
                 if isinstance(value, bool) or not isinstance(value, (int, float)):
                     raise ValueError(f"baseline attack evidence has non-numeric {feature}")
