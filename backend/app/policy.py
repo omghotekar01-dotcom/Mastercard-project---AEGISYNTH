@@ -7,6 +7,7 @@ from itertools import product
 from .contracts import (
     COMPILER_GENERATION_MAX,
     COMPILER_GENERATION_MIN,
+    DEFAULT_MAX_FALSE_POSITIVE_RATE,
     POLICY_FIRST_TIME_CARD_RATIO_MAX,
     POLICY_FIRST_TIME_CARD_RATIO_MIN,
     POLICY_MERCHANT_AGE_HOURS_MAX,
@@ -324,7 +325,7 @@ def _policy_id(generation: int, age: int, card: float, settle: int, burst: float
 class DefenceCompiler:
     """Searches a compact policy space for the best safe generalization."""
 
-    def __init__(self, max_fpr: float = 0.02):
+    def __init__(self, max_fpr: float = DEFAULT_MAX_FALSE_POSITIVE_RATE):
         _validate_max_fpr(max_fpr)
         self.max_fpr = max_fpr
 
