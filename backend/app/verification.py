@@ -9,6 +9,16 @@ try:
 except ImportError:  # production requirements install z3-solver; verification fails closed without it
     HAS_Z3 = False
 
+from .contracts import (
+    POLICY_FIRST_TIME_CARD_RATIO_MAX,
+    POLICY_FIRST_TIME_CARD_RATIO_MIN,
+    POLICY_MERCHANT_AGE_HOURS_MAX,
+    POLICY_MERCHANT_AGE_HOURS_MIN,
+    POLICY_SETTLEMENT_CHANGE_DAYS_MAX,
+    POLICY_SETTLEMENT_CHANGE_DAYS_MIN,
+    POLICY_TEMPORAL_BURST_SCORE_MAX,
+    POLICY_TEMPORAL_BURST_SCORE_MIN,
+)
 from .policy import (
     _COMPILER_AGE_CODES,
     _COMPILER_BURST_PERCENT_CODES,
@@ -127,10 +137,26 @@ def _validate_policy_action(policy: Policy) -> tuple[bool, list[str]]:
 def _validate_policy_numeric_fields(policy: Policy) -> tuple[bool, list[str]]:
     """Fail closed if schema-bypassed policy numerics are malformed."""
     bounded_fields = {
-        "merchant_age_max": (policy.merchant_age_max, 0.0, float(24 * 365 * 20)),
-        "first_time_card_ratio_min": (policy.first_time_card_ratio_min, 0.0, 1.0),
-        "settlement_change_days_max": (policy.settlement_change_days_max, 0.0, 3650.0),
-        "temporal_burst_score_min": (policy.temporal_burst_score_min, 0.0, 1.0),
+        "merchant_age_max": (
+            policy.merchant_age_max,
+            POLICY_MERCHANT_AGE_HOURS_MIN,
+            POLICY_MERCHANT_AGE_HOURS_MAX,
+        ),
+        "first_time_card_ratio_min": (
+            policy.first_time_card_ratio_min,
+            POLICY_FIRST_TIME_CARD_RATIO_MIN,
+            POLICY_FIRST_TIME_CARD_RATIO_MAX,
+        ),
+        "settlement_change_days_max": (
+            policy.settlement_change_days_max,
+            POLICY_SETTLEMENT_CHANGE_DAYS_MIN,
+            POLICY_SETTLEMENT_CHANGE_DAYS_MAX,
+        ),
+        "temporal_burst_score_min": (
+            policy.temporal_burst_score_min,
+            POLICY_TEMPORAL_BURST_SCORE_MIN,
+            POLICY_TEMPORAL_BURST_SCORE_MAX,
+        ),
         "fraud_coverage": (policy.fraud_coverage, 0.0, 1.0),
         "false_positive_rate": (policy.false_positive_rate, 0.0, 1.0),
     }
@@ -199,10 +225,20 @@ def verify_policy(
         burst = Real("burst")
         solver = Solver()
         solver.set(timeout=DEFAULT_Z3_TIMEOUT_MS)
-        solver.add(And(age >= 0, age <= 24 * 365 * 20))
-        solver.add(And(card >= 0, card <= 1))
-        solver.add(And(settle >= 0, settle <= 3650))
-        solver.add(And(burst >= 0, burst <= 1))
+        solver.add(And(age >= POLICY_MERCHANT_AGE_HOURS_MIN, age <= POLICY_MERCHANT_AGE_HOURS_MAX))
+        solver.add(And(card >= POLICY_FIRST_TIME_CARD_RATIO_MIN, card <= POLICY_FIRST_TIME_CARD_RATIO_MAX))
+        solver.add(
+            And(
+                settle >= POLICY_SETTLEMENT_CHANGE_DAYS_MIN,
+                settle <= POLICY_SETTLEMENT_CHANGE_DAYS_MAX,
+            )
+        )
+        solver.add(
+            And(
+                burst >= POLICY_TEMPORAL_BURST_SCORE_MIN,
+                burst <= POLICY_TEMPORAL_BURST_SCORE_MAX,
+            )
+        )
         solver.add(age <= policy.merchant_age_max)
         solver.add(card >= policy.first_time_card_ratio_min)
         solver.add(settle <= policy.settlement_change_days_max)
