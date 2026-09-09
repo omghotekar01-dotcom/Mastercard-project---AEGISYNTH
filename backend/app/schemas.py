@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, StrictBool, field_validator, model_validator
 
+from .contracts import COMPILER_GENERATION_MAX, COMPILER_GENERATION_MIN
+
 Action = Literal["PASS", "STEP_UP", "REVIEW"]
 ApprovalStatus = Literal["HUMAN_APPROVAL_REQUIRED", "APPROVED", "REJECTED"]
 DeploymentStatus = Literal["NOT_DEPLOYED", "CANARY", "ROLLED_BACK"]
@@ -269,7 +271,11 @@ class CompilationProvenance(BaseModel):
 
     compiler_id: str = Field(min_length=1, max_length=80)
     verifier_id: str = Field(min_length=1, max_length=80)
-    generation_count: int = Field(ge=1, le=8, strict=True)
+    generation_count: int = Field(
+        ge=COMPILER_GENERATION_MIN,
+        le=COMPILER_GENERATION_MAX,
+        strict=True,
+    )
     max_false_positive_rate: float = Field(ge=0, le=1)
     max_policy_latency_ms: float = Field(gt=0, allow_inf_nan=False)
 
