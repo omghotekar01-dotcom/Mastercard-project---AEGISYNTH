@@ -12,6 +12,7 @@ except ImportError:  # production requirements install z3-solver; verification f
 from .contracts import (
     COMPILER_GENERATION_MAX,
     COMPILER_GENERATION_MIN,
+    DEFAULT_MAX_FALSE_POSITIVE_RATE,
     POLICY_FIRST_TIME_CARD_RATIO_MAX,
     POLICY_FIRST_TIME_CARD_RATIO_MIN,
     POLICY_MERCHANT_AGE_HOURS_MAX,
@@ -182,7 +183,7 @@ def _validate_policy_numeric_fields(policy: Policy) -> tuple[bool, list[str]]:
 
 def verify_policy(
     policy: Policy,
-    max_fpr: float = 0.02,
+    max_fpr: float = DEFAULT_MAX_FALSE_POSITIVE_RATE,
     max_latency_ms: float = DEFAULT_MAX_POLICY_LATENCY_MS,
 ) -> tuple[bool, list[str]]:
     """Verify policy governance, business budgets, and formal feature-domain consistency.
