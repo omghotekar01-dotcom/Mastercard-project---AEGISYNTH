@@ -72,8 +72,9 @@ jobs:
 
       - name: Smoke-test HTTP surfaces
         run: |
-          curl --fail --silent --show-error http://127.0.0.1:8000/health
-          curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null
+          curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8000/health
+          curl --fail --silent --show-error --max-time 30 http://127.0.0.1:8000/ready >/dev/null
+          curl --fail --silent --show-error --max-time 5 http://127.0.0.1:3000/ >/dev/null
 
       - name: Verify services run unprivileged
         run: |
