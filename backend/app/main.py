@@ -167,12 +167,16 @@ def meta():
 
 @app.get("/api/v1/demo", response_model=LabResult)
 def run_reproducible_demo():
-    """Return the committed synthetic benchmark, failing closed if replay is unavailable."""
+    """Return the committed synthetic benchmark only when replay matches its contract."""
     try:
-        return _benchmark()
+        result = _benchmark()
+        if not _benchmark_replay_operational(result):
+            raise RuntimeError("benchmark replay drifted from committed contract")
+        return result
     except Exception as exc:
         # The public reproducibility endpoint is a trust boundary. Do not leak engine,
-        # solver, or runtime internals when benchmark replay cannot be produced.
+        # solver, contract-drift, or runtime internals when the committed replay cannot
+        # be reproduced exactly.
         raise HTTPException(
             status_code=503,
             detail={
