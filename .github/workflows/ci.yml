@@ -170,3 +170,32 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: "1"
         run: npm run build
+
+      - name: Smoke test production security headers
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: |
+          npm start > /tmp/aegisynth-next.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error --dump-header /tmp/aegisynth-headers.txt --output /dev/null http://127.0.0.1:3000/; then
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat /tmp/aegisynth-next.log
+              exit 1
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              cat /tmp/aegisynth-next.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          grep -Fqi 'X-Content-Type-Options: nosniff' /tmp/aegisynth-headers.txt
+          grep -Fqi 'X-Frame-Options: DENY' /tmp/aegisynth-headers.txt
+          grep -Fqi 'Referrer-Policy: strict-origin-when-cross-origin' /tmp/aegisynth-headers.txt
+          grep -Fqi 'Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()' /tmp/aegisynth-headers.txt
+          echo 'production dashboard security-header contract verified'
