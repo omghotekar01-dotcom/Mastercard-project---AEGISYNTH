@@ -19,6 +19,7 @@ REQUIRED_SELF_CHECKS = {
     "policy_verified",
     "responsible_action",
     "false_positive_budget",
+    "latency_budget",
     "human_approval_required",
     "not_auto_deployed",
     "artifact_seed",
