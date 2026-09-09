@@ -102,13 +102,13 @@ def test_scoring_rejects_values_just_outside_shared_feature_domain(
     for invalid in (math.nextafter(lower, -math.inf), math.nextafter(upper, math.inf)):
         with pytest.raises(
             ValueError,
-            match=rf"scored policy has out-of-range {policy_field}; expected \\[{lower:g}, {upper:g}\\]",
+            match=rf"scored policy has out-of-range {policy_field}; expected \[{lower:g}, {upper:g}\]",
         ):
             _validate_policy_definition(_policy_with(**{policy_field: invalid}))
 
         with pytest.raises(
             ValueError,
-            match=rf"contract transaction 'scoring-domain-tx' has out-of-range {transaction_field}; expected \\[{lower:g}, {upper:g}\\]",
+            match=rf"contract transaction 'scoring-domain-tx' has out-of-range {transaction_field}; expected \[{lower:g}, {upper:g}\]",
         ):
             _validate_policy_features(
                 _transaction_with(**{transaction_field: invalid}),
