@@ -45,24 +45,38 @@ def _benchmark() -> LabResult:
     )
 
 
+def _benchmark_contract_checks(result: LabResult) -> dict[str, bool]:
+    """Evaluate the committed benchmark and safety contract from one source of truth."""
+    return {
+        "benchmark_seed": result.seed == BENCHMARK_SEED,
+        "attack_family": result.attack_family == ATTACK_FAMILY,
+        "generation_count": len(result.iterations) == BENCHMARK_GENERATIONS,
+        "baseline_attack_success": (
+            result.baseline_attack_success_rate
+            == BENCHMARK_CONTRACT["baseline_attack_success_rate"]
+        ),
+        "final_attack_success": (
+            result.final_attack_success_rate == BENCHMARK_CONTRACT["final_attack_success_rate"]
+        ),
+        "fraud_coverage": (
+            result.metrics.final_fraud_coverage == BENCHMARK_CONTRACT["final_fraud_coverage"]
+        ),
+        "benign_acceptance": (
+            result.metrics.benign_acceptance_rate == BENCHMARK_CONTRACT["benign_acceptance_rate"]
+        ),
+        "policy_verified": result.final_policy.verified is True,
+        "responsible_action": result.final_policy.action in {"STEP_UP", "REVIEW"},
+        "false_positive_budget": result.final_policy.false_positive_rate <= 0.02,
+    }
+
+
 def _benchmark_replay_operational() -> bool:
     """Require readiness to reproduce the committed judge-facing benchmark contract."""
     try:
         result = _benchmark()
     except Exception:
         return False
-    return (
-        result.seed == BENCHMARK_SEED
-        and result.attack_family == ATTACK_FAMILY
-        and len(result.iterations) == BENCHMARK_GENERATIONS
-        and result.baseline_attack_success_rate == BENCHMARK_CONTRACT["baseline_attack_success_rate"]
-        and result.final_attack_success_rate == BENCHMARK_CONTRACT["final_attack_success_rate"]
-        and result.metrics.final_fraud_coverage == BENCHMARK_CONTRACT["final_fraud_coverage"]
-        and result.metrics.benign_acceptance_rate == BENCHMARK_CONTRACT["benign_acceptance_rate"]
-        and result.final_policy.verified is True
-        and result.final_policy.action in {"STEP_UP", "REVIEW"}
-        and result.final_policy.false_positive_rate <= 0.02
-    )
+    return all(_benchmark_contract_checks(result).values())
 
 
 def _review_package_operational() -> bool:
@@ -222,16 +236,7 @@ def self_check(response: Response):
 
     checks = {
         "benchmark_runtime_operational": True,
-        "benchmark_seed": result.seed == BENCHMARK_SEED,
-        "attack_family": result.attack_family == ATTACK_FAMILY,
-        "generation_count": len(result.iterations) == BENCHMARK_GENERATIONS,
-        "baseline_attack_success": result.baseline_attack_success_rate == BENCHMARK_CONTRACT["baseline_attack_success_rate"],
-        "final_attack_success": result.final_attack_success_rate == BENCHMARK_CONTRACT["final_attack_success_rate"],
-        "fraud_coverage": result.metrics.final_fraud_coverage == BENCHMARK_CONTRACT["final_fraud_coverage"],
-        "benign_acceptance": result.metrics.benign_acceptance_rate == BENCHMARK_CONTRACT["benign_acceptance_rate"],
-        "policy_verified": result.final_policy.verified is True,
-        "responsible_action": result.final_policy.action in {"STEP_UP", "REVIEW"},
-        "false_positive_budget": result.final_policy.false_positive_rate <= 0.02,
+        **_benchmark_contract_checks(result),
         "human_approval_required": package is not None and package.approval_status == "HUMAN_APPROVAL_REQUIRED",
         "not_auto_deployed": package is not None and package.deployment_status == "NOT_DEPLOYED",
         "artifact_seed": package is not None and package.seed == BENCHMARK_SEED,

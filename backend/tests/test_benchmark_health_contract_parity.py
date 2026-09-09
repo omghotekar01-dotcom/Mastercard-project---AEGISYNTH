@@ -72,18 +72,18 @@ def _drift_false_positive_budget(result):
 
 
 @pytest.mark.parametrize(
-    "drift",
+    "drift,failed_check",
     [
-        _drift_seed,
-        _drift_attack_family,
-        _drift_generation_count,
-        _drift_baseline_claim,
-        _drift_final_claim,
-        _drift_fraud_coverage,
-        _drift_benign_acceptance,
-        _drift_policy_verified,
-        _drift_responsible_action,
-        _drift_false_positive_budget,
+        (_drift_seed, "benchmark_seed"),
+        (_drift_attack_family, "attack_family"),
+        (_drift_generation_count, "generation_count"),
+        (_drift_baseline_claim, "baseline_attack_success"),
+        (_drift_final_claim, "final_attack_success"),
+        (_drift_fraud_coverage, "fraud_coverage"),
+        (_drift_benign_acceptance, "benign_acceptance"),
+        (_drift_policy_verified, "policy_verified"),
+        (_drift_responsible_action, "responsible_action"),
+        (_drift_false_positive_budget, "false_positive_budget"),
     ],
     ids=[
         "seed",
@@ -99,11 +99,16 @@ def _drift_false_positive_budget(result):
     ],
 )
 def test_readiness_and_self_check_fail_closed_on_same_committed_benchmark_drift(
-    monkeypatch, drift
+    monkeypatch, drift, failed_check
 ):
-    """Deployment probes must agree when any submitted benchmark or safety contract field drifts."""
+    """Deployment probes must share one benchmark/safety contract evaluator."""
     benchmark = main_module._benchmark()
     drifted = drift(benchmark)
+
+    contract_checks = main_module._benchmark_contract_checks(drifted)
+    assert contract_checks[failed_check] is False
+    assert sum(not value for value in contract_checks.values()) == 1
+
     monkeypatch.setattr(main_module, "_benchmark", lambda: drifted)
 
     ready_response = client.get("/ready")
@@ -115,3 +120,4 @@ def test_readiness_and_self_check_fail_closed_on_same_committed_benchmark_drift(
 
     assert self_check_response.status_code == 503
     assert self_check_response.json()["status"] == "fail"
+    assert self_check_response.json()["checks"][failed_check] is False
