@@ -4,6 +4,16 @@ import re
 from dataclasses import dataclass
 from decimal import Decimal
 from itertools import product
+from .contracts import (
+    POLICY_FIRST_TIME_CARD_RATIO_MAX,
+    POLICY_FIRST_TIME_CARD_RATIO_MIN,
+    POLICY_MERCHANT_AGE_HOURS_MAX,
+    POLICY_MERCHANT_AGE_HOURS_MIN,
+    POLICY_SETTLEMENT_CHANGE_DAYS_MAX,
+    POLICY_SETTLEMENT_CHANGE_DAYS_MIN,
+    POLICY_TEMPORAL_BURST_SCORE_MAX,
+    POLICY_TEMPORAL_BURST_SCORE_MIN,
+)
 from .schemas import Policy, Transaction
 from .simulator import SUPPORTED_ATTACK_FAMILIES
 
@@ -25,6 +35,25 @@ _COMPILER_AGE_CODES = frozenset(_COMPILER_AGE_GRID)
 _COMPILER_CARD_PERCENT_CODES = frozenset(int(Decimal(str(value)) * 100) for value in _COMPILER_CARD_GRID)
 _COMPILER_SETTLEMENT_CODES = frozenset(_COMPILER_SETTLEMENT_GRID)
 _COMPILER_BURST_PERCENT_CODES = frozenset(int(Decimal(str(value)) * 100) for value in _COMPILER_BURST_GRID)
+
+_POLICY_BOUNDS = {
+    "merchant_age_max": (POLICY_MERCHANT_AGE_HOURS_MIN, POLICY_MERCHANT_AGE_HOURS_MAX),
+    "first_time_card_ratio_min": (POLICY_FIRST_TIME_CARD_RATIO_MIN, POLICY_FIRST_TIME_CARD_RATIO_MAX),
+    "settlement_change_days_max": (
+        POLICY_SETTLEMENT_CHANGE_DAYS_MIN,
+        POLICY_SETTLEMENT_CHANGE_DAYS_MAX,
+    ),
+    "temporal_burst_score_min": (POLICY_TEMPORAL_BURST_SCORE_MIN, POLICY_TEMPORAL_BURST_SCORE_MAX),
+}
+_TRANSACTION_FEATURE_BOUNDS = {
+    "merchant_age_hours": (POLICY_MERCHANT_AGE_HOURS_MIN, POLICY_MERCHANT_AGE_HOURS_MAX),
+    "first_time_card_ratio": (POLICY_FIRST_TIME_CARD_RATIO_MIN, POLICY_FIRST_TIME_CARD_RATIO_MAX),
+    "settlement_change_days": (
+        POLICY_SETTLEMENT_CHANGE_DAYS_MIN,
+        POLICY_SETTLEMENT_CHANGE_DAYS_MAX,
+    ),
+    "temporal_burst_score": (POLICY_TEMPORAL_BURST_SCORE_MIN, POLICY_TEMPORAL_BURST_SCORE_MAX),
+}
 
 @dataclass
 class Score:
@@ -100,13 +129,7 @@ def _validate_policy_definition(policy: Policy) -> None:
     if policy.action == "PASS":
         raise ValueError("scored fraud defence may not use PASS as the triggered action")
 
-    bounds = {
-        "merchant_age_max": (0.0, float(24 * 365 * 20)),
-        "first_time_card_ratio_min": (0.0, 1.0),
-        "settlement_change_days_max": (0.0, 3650.0),
-        "temporal_burst_score_min": (0.0, 1.0),
-    }
-    for field, (minimum, maximum) in bounds.items():
+    for field, (minimum, maximum) in _POLICY_BOUNDS.items():
         value = getattr(policy, field)
         if not _is_real_number(value):
             raise ValueError(f"scored policy has non-numeric {field}")
@@ -179,13 +202,7 @@ def _validate_compiler_identity_binding(policy: Policy) -> None:
 
 def _validate_policy_features(tx: Transaction, population: str) -> None:
     """Validate policy-driving evidence against the same domains used by formal verification."""
-    bounds = {
-        "merchant_age_hours": (0.0, float(24 * 365 * 20)),
-        "first_time_card_ratio": (0.0, 1.0),
-        "settlement_change_days": (0.0, 3650.0),
-        "temporal_burst_score": (0.0, 1.0),
-    }
-    for feature, (minimum, maximum) in bounds.items():
+    for feature, (minimum, maximum) in _TRANSACTION_FEATURE_BOUNDS.items():
         value = getattr(tx, feature)
         if not _is_real_number(value):
             raise ValueError(f"{population} transaction {tx.tx_id!r} has non-numeric {feature}")
