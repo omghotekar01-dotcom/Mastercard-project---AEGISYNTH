@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .artifact import build_review_package, verify_review_package
+from .contracts import COMPILER_GENERATION_MAX, COMPILER_GENERATION_MIN
 from .engine import AegisynthEngine
 from .schemas import LabResult, Policy, ReviewPackage
 from .verification import HAS_Z3, verify_policy
@@ -270,7 +271,11 @@ def self_check(response: Response):
 @app.get("/api/v1/lab/run", response_model=LabResult)
 def run_lab(
     seed: int = Query(42, ge=0, le=10_000_000),
-    generations: int = Query(4, ge=1, le=8),
+    generations: int = Query(
+        4,
+        ge=COMPILER_GENERATION_MIN,
+        le=COMPILER_GENERATION_MAX,
+    ),
 ):
     """Run the bounded synthetic lab, failing closed on engine/runtime failures."""
     try:
