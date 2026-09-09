@@ -71,9 +71,16 @@ jobs:
           [[ "$(docker compose port web 3000)" == 127.0.0.1:* ]]
 
       - name: Smoke-test HTTP surfaces
+        shell: bash
         run: |
-          curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8000/health
-          curl --fail --silent --show-error --max-time 30 http://127.0.0.1:8000/ready >/dev/null
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8000/health >/dev/null
+          # /ready intentionally replays the deterministic benchmark, validates the
+          # governed review package, and exercises the real Z3 verifier. Keep this
+          # fail-closed check in Compose CI, but give the bounded deep verification
+          # enough time on a cold GitHub-hosted runner instead of treating 30s as a
+          # liveness deadline.
+          time curl --fail --silent --show-error --max-time 120 http://127.0.0.1:8000/ready >/dev/null
           curl --fail --silent --show-error --max-time 5 http://127.0.0.1:3000/ >/dev/null
 
       - name: Verify services run unprivileged
