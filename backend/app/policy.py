@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from itertools import product
 from .contracts import (
+    COMPILER_GENERATION_MAX,
+    COMPILER_GENERATION_MIN,
     POLICY_FIRST_TIME_CARD_RATIO_MAX,
     POLICY_FIRST_TIME_CARD_RATIO_MIN,
     POLICY_MERCHANT_AGE_HOURS_MAX,
@@ -165,8 +167,11 @@ def _validate_compiler_identity_binding(policy: Policy) -> None:
         raise ValueError("scored compiler policy has malformed ZD policy_id")
 
     generation, age, card_percent, settle, burst_percent = (int(value) for value in match.groups())
-    if not 1 <= generation <= 8:
-        raise ValueError("scored compiler policy generation must be within [1, 8]")
+    if not COMPILER_GENERATION_MIN <= generation <= COMPILER_GENERATION_MAX:
+        raise ValueError(
+            f"scored compiler policy generation must be within "
+            f"[{COMPILER_GENERATION_MIN}, {COMPILER_GENERATION_MAX}]"
+        )
     if (
         age not in _COMPILER_AGE_CODES
         or card_percent not in _COMPILER_CARD_PERCENT_CODES
@@ -325,8 +330,14 @@ class DefenceCompiler:
 
     def synthesize(self, benign: list[Transaction], attacks: list[Transaction], generation: int) -> Policy:
         _validate_max_fpr(self.max_fpr)
-        if isinstance(generation, bool) or not isinstance(generation, int) or not 1 <= generation <= 8:
-            raise ValueError("generation must be an integer within [1, 8]")
+        if (
+            type(generation) is not int
+            or not COMPILER_GENERATION_MIN <= generation <= COMPILER_GENERATION_MAX
+        ):
+            raise ValueError(
+                f"generation must be an integer within "
+                f"[{COMPILER_GENERATION_MIN}, {COMPILER_GENERATION_MAX}]"
+            )
         _validate_evaluation_populations(benign, attacks)
 
         best: tuple[float, Policy] | None = None
