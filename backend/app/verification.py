@@ -10,6 +10,8 @@ except ImportError:  # production requirements install z3-solver; verification f
     HAS_Z3 = False
 
 from .contracts import (
+    COMPILER_GENERATION_MAX,
+    COMPILER_GENERATION_MIN,
     POLICY_FIRST_TIME_CARD_RATIO_MAX,
     POLICY_FIRST_TIME_CARD_RATIO_MIN,
     POLICY_MERCHANT_AGE_HOURS_MAX,
@@ -84,8 +86,11 @@ def _validate_compiler_identity_binding(policy: Policy) -> tuple[bool, list[str]
         return False, ["Compiler policy identity invalid: malformed ZD policy_id"]
 
     generation, age, card_percent, settle, burst_percent = (int(value) for value in match.groups())
-    if not 1 <= generation <= 8:
-        return False, ["Compiler policy identity invalid: generation must be within [1, 8]"]
+    if not COMPILER_GENERATION_MIN <= generation <= COMPILER_GENERATION_MAX:
+        return False, [
+            "Compiler policy identity invalid: generation must be within "
+            f"[{COMPILER_GENERATION_MIN}, {COMPILER_GENERATION_MAX}]"
+        ]
     if (
         age not in _COMPILER_AGE_CODES
         or card_percent not in _COMPILER_CARD_PERCENT_CODES
