@@ -51,6 +51,26 @@ def _drift_benign_acceptance(result):
     )
 
 
+def _drift_policy_verified(result):
+    return result.model_copy(
+        update={"final_policy": result.final_policy.model_copy(update={"verified": False})}
+    )
+
+
+def _drift_responsible_action(result):
+    return result.model_copy(
+        update={"final_policy": result.final_policy.model_copy(update={"action": "ALLOW"})}
+    )
+
+
+def _drift_false_positive_budget(result):
+    return result.model_copy(
+        update={
+            "final_policy": result.final_policy.model_copy(update={"false_positive_rate": 0.0201})
+        }
+    )
+
+
 @pytest.mark.parametrize(
     "drift",
     [
@@ -61,6 +81,9 @@ def _drift_benign_acceptance(result):
         _drift_final_claim,
         _drift_fraud_coverage,
         _drift_benign_acceptance,
+        _drift_policy_verified,
+        _drift_responsible_action,
+        _drift_false_positive_budget,
     ],
     ids=[
         "seed",
@@ -70,12 +93,15 @@ def _drift_benign_acceptance(result):
         "final-attack-success",
         "fraud-coverage",
         "benign-acceptance",
+        "policy-verified",
+        "responsible-action",
+        "false-positive-budget",
     ],
 )
 def test_readiness_and_self_check_fail_closed_on_same_committed_benchmark_drift(
     monkeypatch, drift
 ):
-    """Deployment probes must agree when any submitted benchmark contract field drifts."""
+    """Deployment probes must agree when any submitted benchmark or safety contract field drifts."""
     benchmark = main_module._benchmark()
     drifted = drift(benchmark)
     monkeypatch.setattr(main_module, "_benchmark", lambda: drifted)
