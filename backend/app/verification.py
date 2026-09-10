@@ -15,6 +15,7 @@ from .contracts import (
     COMPILER_GENERATION_MIN,
     DEFAULT_MAX_FALSE_POSITIVE_RATE,
     DEFAULT_MAX_POLICY_LATENCY_MS,
+    DEFAULT_Z3_TIMEOUT_MS,
     POLICY_FIRST_TIME_CARD_RATIO_MAX,
     POLICY_FIRST_TIME_CARD_RATIO_MIN,
     POLICY_MERCHANT_AGE_HOURS_MAX,
@@ -34,7 +35,6 @@ from .policy import (
 from .schemas import Policy
 
 ALLOWED_ACTIONS = {"PASS", "STEP_UP", "REVIEW"}
-DEFAULT_Z3_TIMEOUT_MS = 1000
 _CANONICAL_POLICY_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _COMPILER_POLICY_ID = re.compile(r"^ZD-(\d{2})-(\d{3})-(\d{2})-(\d{2})-(\d{2})$")
 _Z3_LOCK = threading.Lock()
