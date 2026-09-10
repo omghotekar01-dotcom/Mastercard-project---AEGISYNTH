@@ -50,7 +50,7 @@ def test_scoring_rejects_nonfinite_or_negative_latency_evidence(latency: float) 
 
     with pytest.raises(
         ValueError,
-        match="scored policy estimated_latency_ms must be finite and >= 0",
+        match="scored policy estimated_latency_ms must be finite and within",
     ):
         score_policy(policy, [_tx("B-1", fraud=False)], [_tx("A-1", fraud=True)])
 
