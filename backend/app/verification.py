@@ -45,15 +45,27 @@ def _is_real_number(value: object) -> bool:
 
 
 def _validate_budgets(max_fpr: float, max_latency_ms: float) -> tuple[bool, list[str]]:
-    """Reject malformed verifier configuration before evaluating a policy."""
+    """Keep verifier configuration within the shared business safety ceilings."""
     if not _is_real_number(max_fpr):
         return False, ["Verifier configuration invalid: max_fpr must be a real numeric value"]
-    if not math.isfinite(max_fpr) or not 0 <= max_fpr <= 1:
-        return False, ["Verifier configuration invalid: max_fpr must be finite and within [0, 1]"]
+    if (
+        not math.isfinite(max_fpr)
+        or not 0 <= max_fpr <= DEFAULT_MAX_FALSE_POSITIVE_RATE
+    ):
+        return False, [
+            "Verifier configuration invalid: max_fpr must be finite and within "
+            f"[0, {DEFAULT_MAX_FALSE_POSITIVE_RATE:g}]"
+        ]
     if not _is_real_number(max_latency_ms):
         return False, ["Verifier configuration invalid: max_latency_ms must be a real numeric value"]
-    if not math.isfinite(max_latency_ms) or max_latency_ms <= 0:
-        return False, ["Verifier configuration invalid: max_latency_ms must be finite and > 0"]
+    if (
+        not math.isfinite(max_latency_ms)
+        or not 0 < max_latency_ms <= DEFAULT_MAX_POLICY_LATENCY_MS
+    ):
+        return False, [
+            "Verifier configuration invalid: max_latency_ms must be finite and within "
+            f"(0, {DEFAULT_MAX_POLICY_LATENCY_MS:g}]"
+        ]
     return True, []
 
 
