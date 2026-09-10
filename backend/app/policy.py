@@ -106,11 +106,16 @@ def _is_real_number(value: object) -> bool:
 
 
 def _validate_max_fpr(value: object) -> None:
-    """Keep the live compiler budget inside the same safe domain enforced at construction."""
+    """Keep compiler synthesis at or below the shared business FPR safety ceiling."""
     if not _is_real_number(value):
         raise ValueError("max_fpr must be a real numeric value")
-    if not math.isfinite(value) or not 0 <= value <= 1:
-        raise ValueError("max_fpr must be finite and within [0, 1]")
+    if (
+        not math.isfinite(value)
+        or not 0 <= value <= DEFAULT_MAX_FALSE_POSITIVE_RATE
+    ):
+        raise ValueError(
+            f"max_fpr must be finite and within [0, {DEFAULT_MAX_FALSE_POSITIVE_RATE:g}]"
+        )
 
 
 def _validate_policy_definition(policy: Policy) -> None:
