@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import json
 
+from .contracts import DEFAULT_MAX_FALSE_POSITIVE_RATE, DEFAULT_MAX_POLICY_LATENCY_MS
 from .policy import (
     _COMPILER_AGE_GRID,
     _COMPILER_BURST_GRID,
@@ -14,15 +15,11 @@ from .policy import (
 )
 from .schemas import CompilationProvenance, LabResult, ReviewPackage
 from .simulator import SUPPORTED_ATTACK_FAMILIES
-from .verification import (
-    DEFAULT_MAX_POLICY_LATENCY_MS,
-    HAS_Z3,
-    verify_policy,
-)
+from .verification import HAS_Z3, verify_policy
 
 COMPILER_ID = "compact-grid-search-v1"
 VERIFIER_ID = "z3-business-guardrails-v1"
-DEFAULT_MAX_FPR = 0.02
+DEFAULT_MAX_FPR = DEFAULT_MAX_FALSE_POSITIVE_RATE
 REVIEW_PACKAGE_VERSION = "1.2"
 APPROVAL_STATUS = "HUMAN_APPROVAL_REQUIRED"
 DEPLOYMENT_STATUS = "NOT_DEPLOYED"
