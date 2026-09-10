@@ -2,6 +2,7 @@ import math
 
 import pytest
 
+from app.contracts import DEFAULT_MAX_POLICY_LATENCY_MS
 from app.policy import score_policy
 from app.schemas import Policy, Transaction
 
@@ -50,5 +51,16 @@ def test_scoring_rejects_nonfinite_or_negative_latency_evidence(latency: float) 
     with pytest.raises(
         ValueError,
         match="scored policy estimated_latency_ms must be finite and >= 0",
+    ):
+        score_policy(policy, [_tx("B-1", fraud=False)], [_tx("A-1", fraud=True)])
+
+
+def test_scoring_rejects_policy_latency_above_shared_business_ceiling() -> None:
+    policy = _policy()
+    policy.__dict__["estimated_latency_ms"] = DEFAULT_MAX_POLICY_LATENCY_MS + 0.01
+
+    with pytest.raises(
+        ValueError,
+        match="scored policy estimated_latency_ms must be finite and within",
     ):
         score_policy(policy, [_tx("B-1", fraud=False)], [_tx("A-1", fraud=True)])
