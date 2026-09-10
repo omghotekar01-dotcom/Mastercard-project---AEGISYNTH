@@ -8,6 +8,7 @@ from .contracts import (
     COMPILER_GENERATION_MAX,
     COMPILER_GENERATION_MIN,
     DEFAULT_MAX_FALSE_POSITIVE_RATE,
+    DEFAULT_MAX_POLICY_LATENCY_MS,
     POLICY_FIRST_TIME_CARD_RATIO_MAX,
     POLICY_FIRST_TIME_CARD_RATIO_MIN,
     POLICY_MERCHANT_AGE_HOURS_MAX,
@@ -150,8 +151,14 @@ def _validate_policy_definition(policy: Policy) -> None:
 
     if not _is_real_number(policy.estimated_latency_ms):
         raise ValueError("scored policy has non-numeric estimated_latency_ms")
-    if not math.isfinite(policy.estimated_latency_ms) or policy.estimated_latency_ms < 0:
-        raise ValueError("scored policy estimated_latency_ms must be finite and >= 0")
+    if (
+        not math.isfinite(policy.estimated_latency_ms)
+        or not 0 <= policy.estimated_latency_ms <= DEFAULT_MAX_POLICY_LATENCY_MS
+    ):
+        raise ValueError(
+            "scored policy estimated_latency_ms must be finite and within "
+            f"[0, {DEFAULT_MAX_POLICY_LATENCY_MS:g}]"
+        )
 
     _validate_compiler_identity_binding(policy)
 
