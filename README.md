@@ -10,7 +10,7 @@
 [![Z3](https://img.shields.io/badge/FORMAL%20VERIFICATION-Z3-6F42C1?style=flat-square)](https://github.com/Z3Prover/z3)
 [![MIT License](https://img.shields.io/badge/LICENSE-MIT-222?style=flat-square)](LICENSE)
 
-**Team XYRO — Om Ghotekar · Prajwal Bhosale**  
+**Team Peaky Coders — Om Ghotekar · Prajwal Bhosale**  
 Mastercard Innovation Challenge @ GFF 2026 · AI Defense Lab for Payment Security
 
 ---
